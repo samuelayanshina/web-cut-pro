@@ -25,6 +25,7 @@ import { ColorWheels } from './ColorWheels';
 import { BUILTIN_LUTS, LutParser } from '../engine/LutParser';
 import { ParametricEqVisualizer } from './ParametricEqVisualizer';
 import { SubFrameAudioEngine } from '../engine/SubFrameAudioEngine';
+import { EnhanceLightColorEngine } from '../engine/EnhanceLightColorEngine';
 
 interface InspectorProps {
   selectedClip: TimelineClip | null;
@@ -43,8 +44,9 @@ export const Inspector: React.FC<InspectorProps> = ({
   onDeleteClip,
   onDetachAudio,
 }) => {
-  const [activeTab, setActiveTab] = useState<'video' | 'color' | 'audio' | 'dsp' | 'text' | 'auditions' | 'optics'>('video');
+  const [activeTab, setActiveTab] = useState<'video' | 'color' | 'audio' | 'dsp' | 'text' | 'auditions' | 'optics' | 'fcp12'>('video');
   const [colorMode, setColorMode] = useState<'wheels' | 'board' | 'lut'>('wheels');
+  const [isEnhancing, setIsEnhancing] = useState(false);
 
   if (!selectedClip) {
     return (
@@ -165,6 +167,33 @@ export const Inspector: React.FC<InspectorProps> = ({
     });
   };
 
+  const handleEnhanceLightColor = () => {
+    if (!selectedClip) return;
+    setIsEnhancing(true);
+    setTimeout(() => {
+      const canvasEl = document.querySelector('canvas');
+      const enhanced = EnhanceLightColorEngine.analyzeAndEnhance(
+        canvasEl || document.createElement('canvas'),
+        selectedClip.colorGrading,
+        selectedClip.enhanceLightColor
+      );
+      onUpdateClip({
+        ...selectedClip,
+        colorGrading: enhanced,
+        enhanceLightColor: {
+          enabled: true,
+          intensity: 100,
+          autoBalanced: true,
+          exposureOffset: enhanced.exposure,
+          contrastBoost: enhanced.contrast,
+          tempCorrection: enhanced.temperature,
+          vibranceBoost: enhanced.saturation,
+        },
+      });
+      setIsEnhancing(false);
+    }, 200);
+  };
+
   return (
     <div className="flex flex-col h-full bg-fcp-panel border-l border-fcp-border text-xs select-none">
       {/* Clip Title & Actions */}
@@ -222,6 +251,16 @@ export const Inspector: React.FC<InspectorProps> = ({
         >
           <Activity size={12} />
           <span>Logic DSP</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('fcp12')}
+          className={`flex-1 py-1.5 px-2 flex items-center justify-center gap-1 border-b-2 transition-colors whitespace-nowrap ${
+            activeTab === 'fcp12' ? 'border-sky-500 text-sky-400 font-medium' : 'border-transparent text-gray-400 hover:text-gray-200'
+          }`}
+        >
+          <Sparkles size={12} className="text-sky-400" />
+          <span>FCP 12 AI</span>
         </button>
 
         {selectedClip.type === 'title' && (
@@ -382,9 +421,29 @@ export const Inspector: React.FC<InspectorProps> = ({
           </div>
         )}
 
-        {/* COLOR TAB (3-Way Wheels) */}
+        {/* COLOR TAB (3-Way Wheels & AI Enhance Light and Color) */}
         {activeTab === 'color' && (
           <div className="space-y-3">
+            {/* ✨ FCP 12 One-Click Enhance Light & Color */}
+            <div className="p-2.5 bg-gradient-to-r from-sky-950/70 to-indigo-950/50 rounded border border-sky-800/60 flex items-center justify-between shadow">
+              <div>
+                <div className="text-[11px] font-bold text-sky-300 flex items-center gap-1.5">
+                  <Sparkles size={13} className="text-sky-400 animate-pulse" />
+                  <span>Enhance Light & Color</span>
+                </div>
+                <div className="text-[10px] text-gray-400 mt-0.5">
+                  FCP 12 neural auto-balance & dynamic range stretch
+                </div>
+              </div>
+              <button
+                onClick={handleEnhanceLightColor}
+                disabled={isEnhancing}
+                className="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded font-medium text-[11px] shadow transition-all flex items-center gap-1 active:scale-95"
+              >
+                {isEnhancing ? 'Analyzing...' : '✨ Enhance'}
+              </button>
+            </div>
+
             <ColorWheels
               wheels={
                 selectedClip.colorGrading.wheels || {
@@ -790,6 +849,360 @@ export const Inspector: React.FC<InspectorProps> = ({
                       }
                       className="w-full accent-purple-500"
                     />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* FCP 12 AI SUITE TAB */}
+        {activeTab === 'fcp12' && (
+          <div className="space-y-4">
+            {/* 1. ✨ AI ENHANCE LIGHT AND COLOR */}
+            <div className="p-3 bg-[#181818] rounded-md border border-sky-900/60 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 font-bold text-sky-400 text-[11px] uppercase tracking-wide">
+                  <Sparkles size={13} className="text-sky-400" />
+                  <span>Enhance Light & Color</span>
+                </div>
+                <button
+                  onClick={handleEnhanceLightColor}
+                  disabled={isEnhancing}
+                  className="px-2.5 py-1 bg-sky-600 hover:bg-sky-500 text-white rounded font-medium text-[10px] shadow transition-all active:scale-95"
+                >
+                  {isEnhancing ? 'Analyzing...' : 'Auto Grade'}
+                </button>
+              </div>
+
+              <div className="text-[10px] text-gray-400 leading-relaxed">
+                Applies neural histogram balancing, dynamic range expansion, and skin-tone safe chromatic adaptation.
+              </div>
+
+              {selectedClip.enhanceLightColor?.autoBalanced && (
+                <div className="grid grid-cols-2 gap-2 p-2 bg-[#121212] rounded border border-sky-950 text-[10px] font-mono">
+                  <div className="text-gray-400">Exposure: <span className="text-sky-300">{selectedClip.enhanceLightColor.exposureOffset > 0 ? '+' : ''}{selectedClip.enhanceLightColor.exposureOffset} EV</span></div>
+                  <div className="text-gray-400">Contrast: <span className="text-sky-300">{selectedClip.enhanceLightColor.contrastBoost}x</span></div>
+                  <div className="text-gray-400">Temp: <span className="text-sky-300">{selectedClip.enhanceLightColor.tempCorrection > 0 ? '+' : ''}{selectedClip.enhanceLightColor.tempCorrection}K</span></div>
+                  <div className="text-gray-400">Vibrance: <span className="text-sky-300">{selectedClip.enhanceLightColor.vibranceBoost}x</span></div>
+                </div>
+              )}
+            </div>
+
+            {/* 2. 🥽 APPLE VISION PRO SPATIAL VIDEO */}
+            <div className="p-3 bg-[#181818] rounded-md border border-cyan-900/60 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 font-bold text-cyan-400 text-[11px] uppercase tracking-wide">
+                  <span>🥽 Vision Pro Spatial Video</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={selectedClip.spatialVideo?.enabled || false}
+                  onChange={(e) =>
+                    onUpdateClip({
+                      ...selectedClip,
+                      spatialVideo: {
+                        enabled: e.target.checked,
+                        mode: selectedClip.spatialVideo?.mode || 'anaglyph-3d',
+                        disparity: selectedClip.spatialVideo?.disparity || 0,
+                        eyeSeparation: selectedClip.spatialVideo?.eyeSeparation || 18,
+                      },
+                    })
+                  }
+                  className="accent-cyan-500 cursor-pointer"
+                />
+              </div>
+
+              {selectedClip.spatialVideo?.enabled && (
+                <div className="space-y-2.5 pt-2 border-t border-gray-800">
+                  <div>
+                    <label className="text-[10px] text-gray-400 block mb-1">Stereoscopic Viewing Mode</label>
+                    <select
+                      value={selectedClip.spatialVideo.mode}
+                      onChange={(e) =>
+                        onUpdateClip({
+                          ...selectedClip,
+                          spatialVideo: {
+                            ...selectedClip.spatialVideo!,
+                            mode: e.target.value as any,
+                          },
+                        })
+                      }
+                      className="w-full bg-[#141414] border border-gray-700 rounded px-2 py-1 text-cyan-300 text-xs font-medium"
+                    >
+                      <option value="anaglyph-3d">Anaglyph 3D (Red / Cyan Dubois)</option>
+                      <option value="side-by-side">Side-by-Side (SBS 3D Headset)</option>
+                      <option value="left-eye">Left Eye Perspective</option>
+                      <option value="right-eye">Right Eye Perspective</option>
+                      <option value="2d">2D Standard (Single Monocular)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between text-[10px] text-gray-400 mb-0.5">
+                      <span>Zero-Parallax Convergence Plane</span>
+                      <span className="font-mono text-cyan-400">{selectedClip.spatialVideo.disparity} px</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={-80}
+                      max={80}
+                      step={2}
+                      value={selectedClip.spatialVideo.disparity}
+                      onChange={(e) =>
+                        onUpdateClip({
+                          ...selectedClip,
+                          spatialVideo: {
+                            ...selectedClip.spatialVideo!,
+                            disparity: Number(e.target.value),
+                          },
+                        })
+                      }
+                      className="w-full accent-cyan-500"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between text-[10px] text-gray-400 mb-0.5">
+                      <span>Inter-Ocular Separation</span>
+                      <span className="font-mono text-cyan-400">{selectedClip.spatialVideo.eyeSeparation} mm</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={40}
+                      step={1}
+                      value={selectedClip.spatialVideo.eyeSeparation}
+                      onChange={(e) =>
+                        onUpdateClip({
+                          ...selectedClip,
+                          spatialVideo: {
+                            ...selectedClip.spatialVideo!,
+                            eyeSeparation: Number(e.target.value),
+                          },
+                        })
+                      }
+                      className="w-full accent-cyan-500"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 3. 🪄 AI MAGNETIC MASK (SUBJECT ISOLATION) */}
+            <div className="p-3 bg-[#181818] rounded-md border border-pink-900/60 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 font-bold text-pink-400 text-[11px] uppercase tracking-wide">
+                  <span>🪄 AI Magnetic Mask</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={selectedClip.magneticMask?.enabled || false}
+                  onChange={(e) =>
+                    onUpdateClip({
+                      ...selectedClip,
+                      magneticMask: {
+                        enabled: e.target.checked,
+                        feather: selectedClip.magneticMask?.feather || 12,
+                        invert: selectedClip.magneticMask?.invert || false,
+                        showMatte: selectedClip.magneticMask?.showMatte || false,
+                        points: selectedClip.magneticMask?.points || [{ x: 0.5, y: 0.45, isForeground: true }],
+                        edgeTolerance: selectedClip.magneticMask?.edgeTolerance || 40,
+                        blurBackground: selectedClip.magneticMask?.blurBackground ?? true,
+                        backgroundBlurAmount: selectedClip.magneticMask?.backgroundBlurAmount || 14,
+                      },
+                    })
+                  }
+                  className="accent-pink-500 cursor-pointer"
+                />
+              </div>
+
+              {selectedClip.magneticMask?.enabled && (
+                <div className="space-y-2.5 pt-2 border-t border-gray-800">
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="flex items-center gap-1.5 cursor-pointer text-[10px] text-gray-300">
+                      <input
+                        type="checkbox"
+                        checked={selectedClip.magneticMask.blurBackground}
+                        onChange={(e) =>
+                          onUpdateClip({
+                            ...selectedClip,
+                            magneticMask: {
+                              ...selectedClip.magneticMask!,
+                              blurBackground: e.target.checked,
+                            },
+                          })
+                        }
+                        className="accent-pink-500"
+                      />
+                      <span>Portrait Bokeh</span>
+                    </label>
+
+                    <label className="flex items-center gap-1.5 cursor-pointer text-[10px] text-gray-300">
+                      <input
+                        type="checkbox"
+                        checked={selectedClip.magneticMask.showMatte}
+                        onChange={(e) =>
+                          onUpdateClip({
+                            ...selectedClip,
+                            magneticMask: {
+                              ...selectedClip.magneticMask!,
+                              showMatte: e.target.checked,
+                            },
+                          })
+                        }
+                        className="accent-pink-500"
+                      />
+                      <span>Matte View</span>
+                    </label>
+                  </div>
+
+                  {selectedClip.magneticMask.blurBackground && (
+                    <div>
+                      <div className="flex justify-between text-[10px] text-gray-400 mb-0.5">
+                        <span>Background Bokeh Blur</span>
+                        <span className="font-mono text-pink-400">{selectedClip.magneticMask.backgroundBlurAmount} px</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={2}
+                        max={30}
+                        step={1}
+                        value={selectedClip.magneticMask.backgroundBlurAmount}
+                        onChange={(e) =>
+                          onUpdateClip({
+                            ...selectedClip,
+                            magneticMask: {
+                              ...selectedClip.magneticMask!,
+                              backgroundBlurAmount: Number(e.target.value),
+                            },
+                          })
+                        }
+                        className="w-full accent-pink-500"
+                      />
+                    </div>
+                  )}
+
+                  <div>
+                    <div className="flex justify-between text-[10px] text-gray-400 mb-0.5">
+                      <span>Edge Feathering</span>
+                      <span className="font-mono text-pink-400">{selectedClip.magneticMask.feather} px</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={40}
+                      step={1}
+                      value={selectedClip.magneticMask.feather}
+                      onChange={(e) =>
+                        onUpdateClip({
+                          ...selectedClip,
+                          magneticMask: {
+                            ...selectedClip.magneticMask!,
+                            feather: Number(e.target.value),
+                          },
+                        })
+                      }
+                      className="w-full accent-pink-500"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 4. 🎯 AI OBJECT TRACKER */}
+            <div className="p-3 bg-[#181818] rounded-md border border-amber-900/60 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 font-bold text-amber-400 text-[11px] uppercase tracking-wide">
+                  <span>🎯 AI Object Tracker</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={selectedClip.objectTracker?.enabled || false}
+                  onChange={(e) =>
+                    onUpdateClip({
+                      ...selectedClip,
+                      objectTracker: {
+                        enabled: e.target.checked,
+                        mode: selectedClip.objectTracker?.mode || 'mosaic-blur',
+                        boundingBox: selectedClip.objectTracker?.boundingBox || { x: 0.38, y: 0.3, width: 0.24, height: 0.35 },
+                        isTracking: false,
+                        blurRadius: selectedClip.objectTracker?.blurRadius || 18,
+                      },
+                    })
+                  }
+                  className="accent-amber-500 cursor-pointer"
+                />
+              </div>
+
+              {selectedClip.objectTracker?.enabled && (
+                <div className="space-y-2.5 pt-2 border-t border-gray-800">
+                  <div>
+                    <label className="text-[10px] text-gray-400 block mb-1">Tracking Output Mode</label>
+                    <select
+                      value={selectedClip.objectTracker.mode}
+                      onChange={(e) =>
+                        onUpdateClip({
+                          ...selectedClip,
+                          objectTracker: {
+                            ...selectedClip.objectTracker!,
+                            mode: e.target.value as any,
+                          },
+                        })
+                      }
+                      className="w-full bg-[#141414] border border-gray-700 rounded px-2 py-1 text-amber-300 text-xs font-medium"
+                    >
+                      <option value="mosaic-blur">Mosaic Blur (Face / Plate Censorship)</option>
+                      <option value="anchor-title">Anchor 3D Title to Object</option>
+                      <option value="spotlight">Spotlight (Isolate & Dim Background)</option>
+                    </select>
+                  </div>
+
+                  {selectedClip.objectTracker.mode === 'mosaic-blur' && (
+                    <div>
+                      <div className="flex justify-between text-[10px] text-gray-400 mb-0.5">
+                        <span>Pixelation Blur Density</span>
+                        <span className="font-mono text-amber-400">{selectedClip.objectTracker.blurRadius || 18} px</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={8}
+                        max={40}
+                        step={2}
+                        value={selectedClip.objectTracker.blurRadius || 18}
+                        onChange={(e) =>
+                          onUpdateClip({
+                            ...selectedClip,
+                            objectTracker: {
+                              ...selectedClip.objectTracker!,
+                              blurRadius: Number(e.target.value),
+                            },
+                          })
+                        }
+                        className="w-full accent-amber-500"
+                      />
+                    </div>
+                  )}
+
+                  <div className="pt-1">
+                    <button
+                      onClick={() => {
+                        onUpdateClip({
+                          ...selectedClip,
+                          objectTracker: {
+                            ...selectedClip.objectTracker!,
+                            isTracking: !selectedClip.objectTracker!.isTracking,
+                          },
+                        });
+                      }}
+                      className={`w-full py-1.5 rounded font-bold text-[10px] transition-all flex items-center justify-center gap-1.5 ${
+                        selectedClip.objectTracker.isTracking
+                          ? 'bg-red-600 text-white animate-pulse'
+                          : 'bg-amber-600 hover:bg-amber-500 text-black'
+                      }`}
+                    >
+                      {selectedClip.objectTracker.isTracking ? '⏹ Stop Tracking' : '▶ Analyze & Track Forward'}
+                    </button>
                   </div>
                 </div>
               )}

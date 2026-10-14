@@ -13,7 +13,9 @@ import {
   Repeat, 
   Activity, 
   HardDrive,
-  Camera
+  Camera,
+  Glasses,
+  Sparkles
 } from 'lucide-react';
 import { FCPProject, MediaAsset, ScopeMode } from '../types/fcp';
 import { compositor } from '../engine/Compositor';
@@ -198,6 +200,46 @@ export const Viewer: React.FC<ViewerProps> = ({
           >
             <HardDrive size={13} />
             <span className="hidden xl:inline">{project.useProxyMedia ? 'Proxy' : 'Original'}</span>
+          </button>
+
+          {/* Toggle Spatial Video (Vision Pro) */}
+          <button
+            onClick={() => {
+              const activeClip = project.spine.find(
+                (c) => currentTime >= c.timelineIn && currentTime < c.timelineIn + c.duration
+              );
+              if (activeClip) {
+                const isCurrently3D = activeClip.spatialVideo?.enabled && activeClip.spatialVideo.mode !== '2d';
+                const nextMode = !isCurrently3D
+                  ? 'anaglyph-3d'
+                  : activeClip.spatialVideo?.mode === 'anaglyph-3d'
+                  ? 'side-by-side'
+                  : '2d';
+
+                activeClip.spatialVideo = {
+                  enabled: nextMode !== '2d',
+                  mode: nextMode as any,
+                  disparity: activeClip.spatialVideo?.disparity || 0,
+                  eyeSeparation: 18,
+                };
+                onStepFrame(0);
+              }
+            }}
+            className={`p-1.5 rounded transition-colors flex items-center gap-1 text-[11px] font-medium ${
+              project.spine.some(
+                (c) =>
+                  currentTime >= c.timelineIn &&
+                  currentTime < c.timelineIn + c.duration &&
+                  c.spatialVideo?.enabled &&
+                  c.spatialVideo.mode !== '2d'
+              )
+                ? 'bg-cyan-600 text-white shadow ring-1 ring-cyan-400'
+                : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+            }`}
+            title="Toggle Apple Vision Pro Spatial Video Mode"
+          >
+            <Glasses size={13} />
+            <span className="hidden xl:inline">Spatial 3D</span>
           </button>
 
           <button

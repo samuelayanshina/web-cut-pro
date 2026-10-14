@@ -8,6 +8,9 @@ import { RetimingEngine } from './RetimingEngine';
 import { FilmOpticsEngine } from './FilmOpticsEngine';
 import { MotionBehaviors } from './MotionBehaviors';
 import { hardwareFrameCache } from './HardwareFrameCache';
+import { SpatialVideoEngine } from './SpatialVideoEngine';
+import { MagneticMaskEngine } from './MagneticMaskEngine';
+import { ObjectTrackerEngine } from './ObjectTrackerEngine';
 
 /**
  * Real-time Video Compositor Engine for Web Cut Pro
@@ -62,7 +65,22 @@ export class Compositor {
     }
 
     if (activeSpineClip) {
-      this.renderClip(ctx, activeSpineClip, assets, currentTime, width, height, undefined, useProxyMedia);
+      if (activeSpineClip.spatialVideo?.enabled && activeSpineClip.spatialVideo.mode !== '2d') {
+        SpatialVideoEngine.renderSpatial(
+          ctx,
+          width,
+          height,
+          activeSpineClip.spatialVideo,
+          (spatialCtx, offsetX) => {
+            spatialCtx.save();
+            spatialCtx.translate(offsetX, 0);
+            this.renderClip(spatialCtx, activeSpineClip!, assets, currentTime, width, height, undefined, useProxyMedia);
+            spatialCtx.restore();
+          }
+        );
+      } else {
+        this.renderClip(ctx, activeSpineClip, assets, currentTime, width, height, undefined, useProxyMedia);
+      }
 
       // Transition out
       if (
@@ -302,6 +320,39 @@ export class Compositor {
     }
 
     ctx.restore();
+
+    // FCP 12 AI Magnetic Mask
+    if (effectiveClip.magneticMask?.enabled) {
+      MagneticMaskEngine.applyMask(
+        ctx,
+        width,
+        height,
+        effectiveClip.magneticMask,
+        (maskCtx) => {
+          maskCtx.drawImage(ctx.canvas, 0, 0);
+        }
+      );
+    }
+
+    // FCP 12 AI Object Tracker Overlay & Effects
+    if (effectiveClip.objectTracker?.enabled) {
+      ObjectTrackerEngine.applyTrackerEffect(
+        ctx,
+        effectiveClip.objectTracker.boundingBox,
+        width,
+        height,
+        effectiveClip.objectTracker.mode,
+        effectiveClip.objectTracker.blurRadius || 16
+      );
+      ObjectTrackerEngine.renderTrackerOverlay(
+        ctx,
+        effectiveClip.objectTracker.boundingBox,
+        width,
+        height,
+        effectiveClip.objectTracker.isTracking,
+        effectiveClip.objectTracker.mode
+      );
+    }
   }
 }
 

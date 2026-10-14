@@ -220,6 +220,56 @@ export interface Transition {
   duration: number;
 }
 
+export interface SpatialVideoProps {
+  enabled: boolean;
+  mode: '2d' | 'left-eye' | 'right-eye' | 'side-by-side' | 'anaglyph-3d';
+  disparity: number; // -100 to +100 px convergence plane shift
+  eyeSeparation: number; // 0 to 50 px
+}
+
+export interface MagneticMaskPoint {
+  x: number; // 0 to 1 relative
+  y: number; // 0 to 1 relative
+  isForeground: boolean;
+}
+
+export interface MagneticMaskProps {
+  enabled: boolean;
+  feather: number; // 0 to 50 px
+  invert: boolean;
+  showMatte: boolean;
+  points: MagneticMaskPoint[];
+  edgeTolerance: number; // 10 to 80
+  blurBackground: boolean;
+  backgroundBlurAmount: number; // 0 to 30 px
+}
+
+export interface ObjectTrackerBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface ObjectTrackerProps {
+  enabled: boolean;
+  mode: 'anchor-title' | 'mosaic-blur' | 'spotlight' | 'pin-effect';
+  boundingBox: ObjectTrackerBox;
+  isTracking: boolean;
+  trackingPoints?: Record<number, { x: number; y: number; scale: number }>;
+  blurRadius?: number;
+}
+
+export interface EnhanceLightColorProps {
+  enabled: boolean;
+  intensity: number; // 0 to 100%
+  autoBalanced: boolean;
+  exposureOffset: number;
+  contrastBoost: number;
+  tempCorrection: number;
+  vibranceBoost: number;
+}
+
 export interface AuditionTake {
   id: string;
   name: string;
@@ -250,6 +300,12 @@ export interface TimelineClip {
   kenBurns: KenBurnsProps;
   smartConform: SmartConformProps;
   spatialConform: 'fit' | 'fill' | 'none';
+
+  // FCP 12 Modern Features
+  spatialVideo?: SpatialVideoProps;
+  magneticMask?: MagneticMaskProps;
+  objectTracker?: ObjectTrackerProps;
+  enhanceLightColor?: EnhanceLightColorProps;
 
   volume: number;
   pan: number;

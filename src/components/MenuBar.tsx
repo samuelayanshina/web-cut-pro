@@ -1,4 +1,3 @@
-import React from 'react';
 import { 
   Play, 
   Share2, 
@@ -12,7 +11,9 @@ import {
   Sparkles,
   Smartphone,
   Split,
-  MessageSquare
+  MessageSquare,
+  Undo2,
+  Redo2
 } from 'lucide-react';
 import { Timecode } from '../engine/Timecode';
 import { FCPProject } from '../types/fcp';
@@ -20,6 +21,10 @@ import { FCPProject } from '../types/fcp';
 interface MenuBarProps {
   project: FCPProject;
   currentTime: number;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
   onExportVideo: () => void;
   onOpenBatchQueue: () => void;
   onOpenCompressor: () => void;
@@ -36,6 +41,10 @@ interface MenuBarProps {
 export const MenuBar: React.FC<MenuBarProps> = ({
   project,
   currentTime,
+  onUndo,
+  onRedo,
+  canUndo,
+  canRedo,
   onExportVideo,
   onOpenBatchQueue,
   onOpenCompressor,
@@ -107,7 +116,31 @@ export const MenuBar: React.FC<MenuBarProps> = ({
       </div>
 
       {/* Right: Actions */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 sm:gap-2">
+        <button
+          onClick={onUndo}
+          disabled={!canUndo}
+          className={`p-1.5 rounded transition-colors ${
+            canUndo ? 'text-gray-300 hover:text-white hover:bg-gray-700/50' : 'text-gray-600 cursor-not-allowed'
+          }`}
+          title="Undo (⌘Z)"
+        >
+          <Undo2 size={15} />
+        </button>
+
+        <button
+          onClick={onRedo}
+          disabled={!canRedo}
+          className={`p-1.5 rounded transition-colors ${
+            canRedo ? 'text-gray-300 hover:text-white hover:bg-gray-700/50' : 'text-gray-600 cursor-not-allowed'
+          }`}
+          title="Redo (⇧⌘Z)"
+        >
+          <Redo2 size={15} />
+        </button>
+
+        <div className="h-4 w-[1px] bg-gray-700 mx-1" />
+
         <button
           onClick={onOpenShortcuts}
           className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded transition-colors"

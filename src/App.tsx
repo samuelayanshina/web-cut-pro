@@ -421,6 +421,36 @@ export const App: React.FC = () => {
     return null;
   }, [selectedClipId, project.spine]);
 
+  // Undo / Redo Multi-Level History Stack
+  const [, setHistoryVersion] = useState(0);
+  const undoStackRef = useRef<FCPProject[]>([]);
+  const redoStackRef = useRef<FCPProject[]>([]);
+
+  const pushUndoState = useCallback((curr: FCPProject) => {
+    undoStackRef.current.push(JSON.parse(JSON.stringify(curr)));
+    if (undoStackRef.current.length > 50) {
+      undoStackRef.current.shift();
+    }
+    redoStackRef.current = [];
+    setHistoryVersion((v) => v + 1);
+  }, []);
+
+  const handleUndo = useCallback(() => {
+    if (undoStackRef.current.length === 0) return;
+    const prev = undoStackRef.current.pop()!;
+    redoStackRef.current.push(JSON.parse(JSON.stringify(project)));
+    setProject(prev);
+    setHistoryVersion((v) => v + 1);
+  }, [project]);
+
+  const handleRedo = useCallback(() => {
+    if (redoStackRef.current.length === 0) return;
+    const next = redoStackRef.current.pop()!;
+    undoStackRef.current.push(JSON.parse(JSON.stringify(project)));
+    setProject(next);
+    setHistoryVersion((v) => v + 1);
+  }, [project]);
+
   // Master Playback Loop
   useEffect(() => {
     const loop = (timestamp: number) => {
@@ -477,7 +507,17 @@ export const App: React.FC = () => {
         return;
       }
 
-      if (['1', '2', '3', '4'].includes(e.key)) {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'z' || e.key === 'Z')) {
+        e.preventDefault();
+        if (e.shiftKey) {
+          handleRedo();
+        } else {
+          handleUndo();
+        }
+      } else if ((e.metaKey || e.ctrlKey) && (e.key === 't' || e.key === 'T')) {
+        e.preventDefault();
+        handleApplyDefaultTransition();
+      } else if (['1', '2', '3', '4'].includes(e.key)) {
         handleSwitchMulticamAngle(parseInt(e.key, 10) - 1);
       } else if (e.key === 'm' || e.key === 'M') {
         const newMarker: Marker = {
@@ -487,6 +527,7 @@ export const App: React.FC = () => {
           color: '#3b82f6',
           type: 'standard',
         };
+        pushUndoState(project);
         setProject((prev) => ({ ...prev, markers: [...prev.markers, newMarker] }));
       } else if (e.code === 'Space') {
         e.preventDefault();
@@ -536,7 +577,26 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   });
 
+  const handleApplyDefaultTransition = () => {
+    if (!selectedClipId) return;
+    pushUndoState(project);
+    const newSpine = project.spine.map((c) => {
+      if (c.id === selectedClipId) {
+        return {
+          ...c,
+          transitionOut: {
+            type: 'dissolve' as const,
+            duration: 1.0,
+          },
+        };
+      }
+      return c;
+    });
+    setProject((prev) => ({ ...prev, spine: newSpine }));
+  };
+
   const handleUpdateSpine = (newSpine: TimelineClip[]) => {
+    pushUndoState(project);
     setProject((prev) => ({
       ...prev,
       spine: newSpine,
@@ -544,6 +604,7 @@ export const App: React.FC = () => {
   };
 
   const handleUpdateClip = (updatedClip: TimelineClip) => {
+    pushUndoState(project);
     setProject((prev) => {
       const onSpine = prev.spine.some((c) => c.id === updatedClip.id);
       if (onSpine) {
@@ -565,23 +626,26 @@ export const App: React.FC = () => {
   };
 
   const handleDeleteClip = (clipId: string) => {
+    pushUndoState(project);
     const newSpine = MagneticTimelineEngine.deleteClip(project.spine, clipId);
-    handleUpdateSpine(newSpine);
+    setProject((prev) => ({ ...prev, spine: newSpine }));
     if (selectedClipId === clipId) {
       setSelectedClipId(null);
     }
   };
 
   const handleBladeAtPlayhead = () => {
+    pushUndoState(project);
     const newSpine = MagneticTimelineEngine.bladeClipAtTime(project.spine, currentTime);
-    handleUpdateSpine(newSpine);
+    setProject((prev) => ({ ...prev, spine: newSpine }));
   };
 
   const handleInsertGap = () => {
+    pushUndoState(project);
     const target = MagneticTimelineEngine.getClipAtTime(project.spine, currentTime);
     const insertIdx = target ? target.index + 1 : project.spine.length;
     const newSpine = MagneticTimelineEngine.insertGapClip(project.spine, insertIdx, 3.0);
-    handleUpdateSpine(newSpine);
+    setProject((prev) => ({ ...prev, spine: newSpine }));
   };
 
   const handleToggleRoleMute = (role: AudioRole) => {
@@ -995,6 +1059,10 @@ export const App: React.FC = () => {
       <MenuBar
         project={project}
         currentTime={currentTime}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        canUndo={undoStackRef.current.length > 0}
+        canRedo={redoStackRef.current.length > 0}
         onExportVideo={() => setIsExportOpen(true)}
         onOpenBatchQueue={() => setIsBatchQueueOpen(true)}
         onOpenCompressor={() => setIsCompressorOpen(true)}

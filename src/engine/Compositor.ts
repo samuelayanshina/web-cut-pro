@@ -7,6 +7,7 @@ import { KenBurnsEngine } from './KenBurnsEngine';
 import { RetimingEngine } from './RetimingEngine';
 import { FilmOpticsEngine } from './FilmOpticsEngine';
 import { MotionBehaviors } from './MotionBehaviors';
+import { hardwareFrameCache } from './HardwareFrameCache';
 
 /**
  * Real-time Video Compositor Engine for Web Cut Pro
@@ -240,20 +241,32 @@ export class Compositor {
         effectiveClip.retiming
       );
 
-      if (Math.abs(video.currentTime - targetSourceTime) > 0.08) {
-        video.currentTime = targetSourceTime;
+      // Instant Hardware Frame Cache check (0ms retrieval)
+      const cached = hardwareFrameCache.getCachedFrame(effectiveClip.assetId, targetSourceTime, 30);
+      if (cached) {
+        ctx.drawImage(cached, -width / 2, -height / 2, width, height);
+      } else {
+        if (Math.abs(video.currentTime - targetSourceTime) > 0.08) {
+          video.currentTime = targetSourceTime;
+        }
+
+        if (video.readyState >= 2) {
+          ctx.drawImage(video, -width / 2, -height / 2, width, height);
+          createImageBitmap(video).then((bitmap) => {
+            hardwareFrameCache.storeFrame(effectiveClip.assetId, targetSourceTime, bitmap, 30);
+          }).catch(() => {});
+        } else {
+          ctx.fillStyle = '#1e293b';
+          ctx.fillRect(-width / 2, -height / 2, width, height);
+          ctx.fillStyle = '#64748b';
+          ctx.font = '24px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(`Loading ${effectiveClip.name}...`, 0, 0);
+        }
       }
 
-      if (video.readyState >= 2) {
-        ctx.drawImage(video, -width / 2, -height / 2, width, height);
-      } else {
-        ctx.fillStyle = '#1e293b';
-        ctx.fillRect(-width / 2, -height / 2, width, height);
-        ctx.fillStyle = '#64748b';
-        ctx.font = '24px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(`Loading ${effectiveClip.name}...`, 0, 0);
-      }
+      // Pre-fetch surrounding frames for buttery scrubbing
+      hardwareFrameCache.prefetchWindow(video, effectiveClip.assetId, targetSourceTime, 30, 0.5);
     }
 
     // Effects

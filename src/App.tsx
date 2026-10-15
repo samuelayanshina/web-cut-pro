@@ -22,6 +22,9 @@ import { EffectsBrowser } from './components/EffectsBrowser';
 import { CompressorModal } from './components/CompressorModal';
 import { FcpXmlEngine } from './engine/FcpXml';
 import { LibraryHierarchyEngine } from './engine/LibraryHierarchyEngine';
+import { AdminDashboardModal } from './components/AdminDashboardModal';
+import { analyticsEngine } from './engine/AnalyticsEngine';
+import { Timecode } from './engine/Timecode';
 
 const initialWheels = {
   shadows: { hueX: 0, hueY: 0, luma: 0 },
@@ -426,6 +429,7 @@ export const App: React.FC = () => {
   const [isCompressorOpen, setIsCompressorOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isSmartConformOpen, setIsSmartConformOpen] = useState(false);
+  const [isAdminDashboardOpen, setIsAdminDashboardOpen] = useState(false);
 
   const lastTimeRef = useRef<number | null>(null);
   const animFrameRef = useRef<number | null>(null);
@@ -623,9 +627,12 @@ export const App: React.FC = () => {
           e.preventDefault();
           handleDeleteClip(selectedClipId);
         }
-      } else if ((e.metaKey || e.ctrlKey) && e.key === '5') {
+      } else if ((e.metaKey || e.ctrlKey) && (e.key === '5')) {
         e.preventDefault();
         setIsEffectsBrowserOpen((prev) => !prev);
+      } else if ((e.metaKey || e.ctrlKey) && e.altKey && (e.key === 'a' || e.key === 'A')) {
+        e.preventDefault();
+        setIsAdminDashboardOpen((prev) => !prev);
       }
     };
 
@@ -649,6 +656,7 @@ export const App: React.FC = () => {
       return c;
     });
     setProject((prev) => ({ ...prev, spine: newSpine }));
+    analyticsEngine.track('COLOR_GRADE', 'Applied default Cross Dissolve transition (1.0s)');
   };
 
   const handleUpdateSpine = (newSpine: TimelineClip[]) => {
@@ -688,12 +696,14 @@ export const App: React.FC = () => {
     if (selectedClipId === clipId) {
       setSelectedClipId(null);
     }
+    analyticsEngine.track('TRIM_CLIP', `Deleted clip from primary storyline`);
   };
 
   const handleBladeAtPlayhead = () => {
     pushUndoState(project);
     const newSpine = MagneticTimelineEngine.bladeClipAtTime(project.spine, currentTime);
     setProject((prev) => ({ ...prev, spine: newSpine }));
+    analyticsEngine.track('BLADE_CUT', `Bladed clip at timecode ${Timecode.formatSMPTE(currentTime, project.format.frameRate)}`);
   };
 
   const handleInsertGap = () => {
@@ -702,6 +712,7 @@ export const App: React.FC = () => {
     const insertIdx = target ? target.index + 1 : project.spine.length;
     const newSpine = MagneticTimelineEngine.insertGapClip(project.spine, insertIdx, 3.0);
     setProject((prev) => ({ ...prev, spine: newSpine }));
+    analyticsEngine.track('BLADE_CUT', 'Inserted 3.0s Gap clip on storyline (⌥W)');
   };
 
   const handleToggleRoleMute = (role: AudioRole) => {
@@ -1119,6 +1130,7 @@ export const App: React.FC = () => {
         onRedo={handleRedo}
         canUndo={undoStackRef.current.length > 0}
         canRedo={redoStackRef.current.length > 0}
+        onOpenAdminDashboard={() => setIsAdminDashboardOpen(true)}
         onExportVideo={() => setIsExportOpen(true)}
         onOpenBatchQueue={() => setIsBatchQueueOpen(true)}
         onOpenCompressor={() => setIsCompressorOpen(true)}
@@ -1260,6 +1272,11 @@ export const App: React.FC = () => {
       <ShortcutsModal
         isOpen={isShortcutsOpen}
         onClose={() => setIsShortcutsOpen(false)}
+      />
+
+      <AdminDashboardModal
+        isOpen={isAdminDashboardOpen}
+        onClose={() => setIsAdminDashboardOpen(false)}
       />
     </div>
   );

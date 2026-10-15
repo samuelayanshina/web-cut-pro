@@ -14,7 +14,8 @@ import {
   MessageSquare,
   Undo2,
   Redo2,
-  ShieldCheck
+  ShieldCheck,
+  BarChart3
 } from 'lucide-react';
 import { Timecode } from '../engine/Timecode';
 import { FCPProject } from '../types/fcp';
@@ -26,6 +27,7 @@ interface MenuBarProps {
   onRedo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  onOpenAdminDashboard: () => void;
   onExportVideo: () => void;
   onOpenBatchQueue: () => void;
   onOpenCompressor: () => void;
@@ -46,6 +48,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({
   onRedo,
   canUndo,
   canRedo,
+  onOpenAdminDashboard,
   onExportVideo,
   onOpenBatchQueue,
   onOpenCompressor,
@@ -211,6 +214,15 @@ export const MenuBar: React.FC<MenuBarProps> = ({
         >
           <Layers size={13} className="text-indigo-400" />
           <span className="hidden sm:inline">Compressor</span>
+        </button>
+
+        <button
+          onClick={onOpenAdminDashboard}
+          className="flex items-center gap-1.5 px-2.5 py-1 bg-[#1a1a24] hover:bg-[#252536] border border-blue-800/60 rounded text-blue-300 text-xs font-medium transition-colors shadow-sm"
+          title="Open Enterprise Fleet & Visitor Analytics Dashboard (⌥⌘A)"
+        >
+          <BarChart3 size={13} className="text-blue-400" />
+          <span className="hidden md:inline">Admin Fleet</span>
         </button>
 
         <button

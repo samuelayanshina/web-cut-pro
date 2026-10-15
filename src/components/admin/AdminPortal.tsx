@@ -52,16 +52,20 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onNavigateToEditor }) 
   const [isExporting, setIsExporting] = useState<boolean>(false);
   const [lastRefreshed, setLastRefreshed] = useState<string>('Just now');
 
-  // Sync light theme on document root: when admin portal is active, remove dark mode for pure Apple white
+  // Sync light theme and enable vertical scrolling when admin portal is active
   useEffect(() => {
     document.documentElement.classList.remove('dark');
+    document.documentElement.style.overflowY = 'auto';
     document.body.style.backgroundColor = '#f8f8fa';
     document.body.style.color = '#1d1d1f';
+    document.body.style.overflowY = 'auto';
 
     return () => {
       document.documentElement.classList.add('dark');
+      document.documentElement.style.overflowY = '';
       document.body.style.backgroundColor = '#161616';
       document.body.style.color = '#e5e5e5';
+      document.body.style.overflowY = '';
     };
   }, []);
 
@@ -162,7 +166,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onNavigateToEditor }) 
   // ==========================================
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen w-screen bg-[#f8f8fa] font-inter text-[#1d1d1f] flex flex-col justify-between p-6 sm:p-10 select-none overflow-y-auto">
+      <div className="min-h-screen w-full bg-[#f8f8fa] font-inter text-[#1d1d1f] flex flex-col justify-between p-6 sm:p-10 select-none overflow-y-auto">
         {/* Top Header */}
         <div className="w-full max-w-5xl mx-auto flex items-center justify-between py-4">
           <div className="flex items-center gap-3">
@@ -320,7 +324,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onNavigateToEditor }) 
   // VIEW 2: SPATIOUS APPLE WHITE DASHBOARD
   // ==========================================
   return (
-    <div className="min-h-screen w-screen bg-[#f8f8fa] font-inter text-[#1d1d1f] flex flex-col select-none overflow-x-hidden">
+    <div className="min-h-screen w-full bg-[#f8f8fa] font-inter text-[#1d1d1f] flex flex-col select-none overflow-x-hidden overflow-y-auto">
       {/* Top Header Navigation */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#e5e5ea] px-4 sm:px-8 lg:px-12 py-4 shadow-sm">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

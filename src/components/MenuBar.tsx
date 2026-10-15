@@ -13,7 +13,8 @@ import {
   Split,
   MessageSquare,
   Undo2,
-  Redo2
+  Redo2,
+  ShieldCheck
 } from 'lucide-react';
 import { Timecode } from '../engine/Timecode';
 import { FCPProject } from '../types/fcp';
@@ -98,6 +99,15 @@ export const MenuBar: React.FC<MenuBarProps> = ({
             <MessageSquare size={11} />
             <span>Auto Captions</span>
           </button>
+
+          {/* Local Sandbox Privacy Badge */}
+          <div 
+            className="hidden xl:flex items-center gap-1 px-2 py-0.5 bg-emerald-950/40 border border-emerald-700/50 rounded text-[10px] text-emerald-400 font-medium"
+            title="100% Client-Side Sandbox: Your videos and edits never leave your machine. Zero server tracking."
+          >
+            <ShieldCheck size={11} className="text-emerald-400" />
+            <span>Local Sandbox • 100% Private</span>
+          </div>
         </div>
       </div>
 

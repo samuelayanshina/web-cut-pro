@@ -373,9 +373,44 @@ const createInitialProject = (): FCPProject => {
   };
 };
 
+const LOCAL_STORAGE_PROJECT_KEY = 'web_cut_pro_project_v2';
+const LOCAL_STORAGE_ASSETS_KEY = 'web_cut_pro_assets_v2';
+
+const loadPersistedProject = (): FCPProject => {
+  try {
+    const raw = localStorage.getItem(LOCAL_STORAGE_PROJECT_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && Array.isArray(parsed.spine) && parsed.format) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to load persisted project:', e);
+  }
+  return createInitialProject();
+};
+
+const loadPersistedAssets = (): MediaAsset[] => {
+  try {
+    const raw = localStorage.getItem(LOCAL_STORAGE_ASSETS_KEY);
+    if (raw) {
+      const custom = JSON.parse(raw);
+      if (Array.isArray(custom)) {
+        const existingIds = new Set(SAMPLE_ASSETS.map((a) => a.id));
+        const nonDuplicateCustom = custom.filter((c: MediaAsset) => !existingIds.has(c.id));
+        return [...nonDuplicateCustom, ...SAMPLE_ASSETS];
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to load persisted assets:', e);
+  }
+  return SAMPLE_ASSETS;
+};
+
 export const App: React.FC = () => {
-  const [project, setProject] = useState<FCPProject>(createInitialProject);
-  const [assets, setAssets] = useState<MediaAsset[]>(SAMPLE_ASSETS);
+  const [project, setProject] = useState<FCPProject>(loadPersistedProject);
+  const [assets, setAssets] = useState<MediaAsset[]>(loadPersistedAssets);
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [selectedClipId, setSelectedClipId] = useState<string | null>('clip-drone-1');
@@ -450,6 +485,27 @@ export const App: React.FC = () => {
     setProject(next);
     setHistoryVersion((v) => v + 1);
   }, [project]);
+
+  // Auto-save project state to local browser sandbox
+  useEffect(() => {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_PROJECT_KEY, JSON.stringify(project));
+    } catch (e) {
+      console.warn('Project auto-save error:', e);
+    }
+  }, [project]);
+
+  // Auto-save custom assets
+  useEffect(() => {
+    try {
+      const customAssets = assets.filter((a) => a.id.startsWith('local-'));
+      if (customAssets.length > 0) {
+        localStorage.setItem(LOCAL_STORAGE_ASSETS_KEY, JSON.stringify(customAssets));
+      }
+    } catch (e) {
+      console.warn('Assets auto-save error:', e);
+    }
+  }, [assets]);
 
   // Master Playback Loop
   useEffect(() => {
@@ -1071,7 +1127,12 @@ export const App: React.FC = () => {
         onImportFcpXml={handleImportFcpXml}
         onOpenShortcuts={() => setIsShortcutsOpen(true)}
         onResetDemo={() => {
+          try {
+            localStorage.removeItem(LOCAL_STORAGE_PROJECT_KEY);
+            localStorage.removeItem(LOCAL_STORAGE_ASSETS_KEY);
+          } catch {}
           setProject(createInitialProject());
+          setAssets(SAMPLE_ASSETS);
           setCurrentTime(0);
           setSelectedClipId('clip-drone-1');
         }}

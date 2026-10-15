@@ -157,48 +157,48 @@ export const Viewer: React.FC<ViewerProps> = ({
       </div>
 
       {/* Viewer Transport Control Bar */}
-      <div className="h-10 bg-fcp-header border-t border-fcp-border flex items-center justify-between px-3 text-xs">
+      <div className="h-10 bg-[#18181a] border-t border-[#2c2c2e] flex items-center justify-between px-3 text-xs">
         {/* Left: View Controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           {/* Toggle Multicam */}
           <button
             onClick={() => setIsMulticamOpen(!isMulticamOpen)}
-            className={`p-1.5 rounded transition-colors flex items-center gap-1 text-[11px] font-medium ${
+            className={`p-1.5 rounded-md transition-colors flex items-center gap-1 text-xs font-normal ${
               isMulticamOpen
-                ? 'bg-blue-600 text-white shadow'
-                : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+                ? 'bg-[#2c2c2e] text-white border border-[#3e3e42]'
+                : 'text-[#8e8e93] hover:text-[#d1d1d6] hover:bg-[#242426]'
             }`}
             title="Toggle Multicam Angle Viewer (Keys 1-4)"
           >
-            <Camera size={14} />
+            <Camera size={13} className={isMulticamOpen ? 'text-[#0a84ff]' : 'text-[#8e8e93]'} />
             <span className="hidden xl:inline">Multicam</span>
           </button>
 
           {/* Toggle Video Scopes */}
           <button
             onClick={() => setScopeMode(scopeMode === 'off' ? 'waveform' : 'off')}
-            className={`p-1.5 rounded transition-colors flex items-center gap-1 text-[11px] font-medium ${
+            className={`p-1.5 rounded-md transition-colors flex items-center gap-1 text-xs font-normal ${
               scopeMode !== 'off'
-                ? 'bg-emerald-600 text-white shadow'
-                : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+                ? 'bg-[#2c2c2e] text-white border border-[#3e3e42]'
+                : 'text-[#8e8e93] hover:text-[#d1d1d6] hover:bg-[#242426]'
             }`}
             title="Toggle Video Scopes"
           >
-            <Activity size={14} />
+            <Activity size={13} className={scopeMode !== 'off' ? 'text-[#0a84ff]' : 'text-[#8e8e93]'} />
             <span className="hidden xl:inline">Scopes</span>
           </button>
 
           {/* Toggle Proxy vs Original Media */}
           <button
             onClick={onToggleProxyMedia}
-            className={`p-1.5 rounded transition-colors flex items-center gap-1 text-[11px] font-medium ${
+            className={`p-1.5 rounded-md transition-colors flex items-center gap-1 text-xs font-normal ${
               project.useProxyMedia
-                ? 'bg-amber-500 text-black font-bold shadow'
-                : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+                ? 'bg-[#2c2c2e] text-white border border-[#3e3e42]'
+                : 'text-[#8e8e93] hover:text-[#d1d1d6] hover:bg-[#242426]'
             }`}
             title="Toggle Proxy vs Original Media"
           >
-            <HardDrive size={13} />
+            <HardDrive size={13} className={project.useProxyMedia ? 'text-[#0a84ff]' : 'text-[#8e8e93]'} />
             <span className="hidden xl:inline">{project.useProxyMedia ? 'Proxy' : 'Original'}</span>
           </button>
 
@@ -225,7 +225,7 @@ export const Viewer: React.FC<ViewerProps> = ({
                 onStepFrame(0);
               }
             }}
-            className={`p-1.5 rounded transition-colors flex items-center gap-1 text-[11px] font-medium ${
+            className={`p-1.5 rounded-md transition-colors flex items-center gap-1 text-xs font-normal ${
               project.spine.some(
                 (c) =>
                   currentTime >= c.timelineIn &&
@@ -233,10 +233,10 @@ export const Viewer: React.FC<ViewerProps> = ({
                   c.spatialVideo?.enabled &&
                   c.spatialVideo.mode !== '2d'
               )
-                ? 'bg-cyan-600 text-white shadow ring-1 ring-cyan-400'
-                : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+                ? 'bg-[#2c2c2e] text-white border border-[#3e3e42]'
+                : 'text-[#8e8e93] hover:text-[#d1d1d6] hover:bg-[#242426]'
             }`}
-            title="Toggle Apple Vision Pro Spatial Video Mode"
+            title="Toggle Spatial Video Mode"
           >
             <Glasses size={13} />
             <span className="hidden xl:inline">Spatial 3D</span>
@@ -244,8 +244,8 @@ export const Viewer: React.FC<ViewerProps> = ({
 
           <button
             onClick={() => setShowSafeZones(!showSafeZones)}
-            className={`p-1.5 rounded transition-colors ${
-              showSafeZones ? 'bg-fcp-accent text-white' : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+            className={`p-1.5 rounded-md transition-colors ${
+              showSafeZones ? 'bg-[#2c2c2e] text-[#0a84ff] border border-[#3e3e42]' : 'text-[#8e8e93] hover:text-[#d1d1d6] hover:bg-[#242426]'
             }`}
             title="Toggle Safe Zones"
           >
@@ -254,10 +254,10 @@ export const Viewer: React.FC<ViewerProps> = ({
 
           <button
             onClick={toggleMute}
-            className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded transition-colors"
+            className="p-1.5 text-[#8e8e93] hover:text-white hover:bg-[#242426] rounded-md transition-colors"
             title={isMuted ? 'Unmute' : 'Mute Master Audio'}
           >
-            {isMuted ? <VolumeX size={14} className="text-red-400" /> : <Volume2 size={14} />}
+            {isMuted ? <VolumeX size={14} className="text-[#ff453a]" /> : <Volume2 size={14} />}
           </button>
         </div>
 

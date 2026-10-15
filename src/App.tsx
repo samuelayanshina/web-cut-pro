@@ -24,6 +24,7 @@ import { FcpXmlEngine } from './engine/FcpXml';
 import { AdminPortal } from './components/admin/AdminPortal';
 import { analyticsEngine } from './engine/AnalyticsEngine';
 import { Timecode } from './engine/Timecode';
+import { Film, Folder, Sliders, Sparkles } from 'lucide-react';
 
 const initialWheels = {
   shadows: { hueX: 0, hueY: 0, luma: 0 },
@@ -428,6 +429,7 @@ export const App: React.FC = () => {
   const [isCompressorOpen, setIsCompressorOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isSmartConformOpen, setIsSmartConformOpen] = useState(false);
+  const [mobileTab, setMobileTab] = useState<'timeline' | 'media' | 'inspector' | 'effects'>('timeline');
   // Client-side route for /admin enterprise portal
   const [currentRoute, setCurrentRoute] = useState<'editor' | 'admin'>(() => {
     if (typeof window !== 'undefined') {
@@ -1151,8 +1153,91 @@ export const App: React.FC = () => {
 
   const selectedClip = getSelectedClip();
 
+  // Shared subcomponent elements for desktop and responsive mobile
+  const mediaBrowserElement = (
+    <MediaBrowser
+      assets={assets}
+      onAddAssetToSpine={handleAddAssetToSpine}
+      onConnectAsset={handleConnectAsset}
+      onAddTitle={handleAddTitle}
+      onImportCustomFiles={handleImportCustomFiles}
+    />
+  );
+
+  const viewerElement = (
+    <Viewer
+      project={project}
+      assets={assets}
+      currentTime={currentTime}
+      isPlaying={isPlaying}
+      totalDuration={totalDuration}
+      activeMulticamAngle={activeMulticamAngle}
+      onTogglePlay={() => setIsPlaying((p) => !p)}
+      onSeek={(t) => {
+        setIsPlaying(false);
+        setCurrentTime(t);
+      }}
+      onStepFrame={(delta) => {
+        setIsPlaying(false);
+        setCurrentTime((t) =>
+          Math.max(0, Math.min(totalDuration, t + delta / project.format.frameRate))
+        );
+      }}
+      onToggleProxyMedia={() =>
+        setProject((prev) => ({ ...prev, useProxyMedia: !prev.useProxyMedia }))
+      }
+      onSwitchMulticamAngle={handleSwitchMulticamAngle}
+    />
+  );
+
+  const inspectorElement = (
+    <Inspector
+      selectedClip={selectedClip}
+      project={project}
+      currentTime={currentTime}
+      onUpdateClip={handleUpdateClip}
+      onDeleteClip={handleDeleteClip}
+      onDetachAudio={handleDetachAudio}
+    />
+  );
+
+  const effectsBrowserElement = (
+    <EffectsBrowser
+      isOpen={true}
+      onClose={() => setIsEffectsBrowserOpen(false)}
+      selectedClip={selectedClip}
+      onApplyEffect={handleApplyEffect}
+      onApplyTransition={handleApplyTransition}
+      onApplyBehavior={handleApplyBehavior}
+      onAddSfxAudio={handleAddSfxAudio}
+    />
+  );
+
+  const timelineElement = (
+    <Timeline
+      project={project}
+      assets={assets}
+      currentTime={currentTime}
+      totalDuration={totalDuration}
+      selectedClipId={selectedClipId}
+      activeTool={activeTool}
+      snappingEnabled={snappingEnabled}
+      skimmerEnabled={skimmerEnabled}
+      onSelectClip={(clip) => setSelectedClipId(clip ? clip.id : null)}
+      onSeek={(t) => setCurrentTime(t)}
+      onUpdateSpine={handleUpdateSpine}
+      onSetActiveTool={setActiveTool}
+      onToggleSnapping={() => setSnappingEnabled((s) => !s)}
+      onToggleSkimmer={() => setSkimmerEnabled((s) => !s)}
+      onBladeAtPlayhead={handleBladeAtPlayhead}
+      onInsertGap={handleInsertGap}
+      onToggleRoleMute={handleToggleRoleMute}
+      onToggleMarkerComplete={handleToggleMarkerComplete}
+    />
+  );
+
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-fcp-bg select-none">
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#161618] select-none text-xs">
       <MenuBar
         project={project}
         currentTime={currentTime}
@@ -1182,91 +1267,102 @@ export const App: React.FC = () => {
         onGenerateCaptions={handleGenerateCaptions}
       />
 
-      <div className="flex-1 flex min-h-0">
-        <div className="w-1/4 min-w-[280px] max-w-[360px] h-full">
-          <MediaBrowser
-            assets={assets}
-            onAddAssetToSpine={handleAddAssetToSpine}
-            onConnectAsset={handleConnectAsset}
-            onAddTitle={handleAddTitle}
-            onImportCustomFiles={handleImportCustomFiles}
-          />
-        </div>
-
-        <div className="flex-1 h-full min-w-0">
-          <Viewer
-            project={project}
-            assets={assets}
-            currentTime={currentTime}
-            isPlaying={isPlaying}
-            totalDuration={totalDuration}
-            activeMulticamAngle={activeMulticamAngle}
-            onTogglePlay={() => setIsPlaying((p) => !p)}
-            onSeek={(t) => {
-              setIsPlaying(false);
-              setCurrentTime(t);
-            }}
-            onStepFrame={(delta) => {
-              setIsPlaying(false);
-              setCurrentTime((t) =>
-                Math.max(0, Math.min(totalDuration, t + delta / project.format.frameRate))
-              );
-            }}
-            onToggleProxyMedia={() =>
-              setProject((prev) => ({ ...prev, useProxyMedia: !prev.useProxyMedia }))
-            }
-            onSwitchMulticamAngle={handleSwitchMulticamAngle}
-          />
-        </div>
-
-        {/* Right Dock: Inspector & Effects Browser */}
-        <div className="flex h-full border-l border-fcp-border">
-          {isEffectsBrowserOpen && (
-            <EffectsBrowser
-              isOpen={isEffectsBrowserOpen}
-              onClose={() => setIsEffectsBrowserOpen(false)}
-              selectedClip={selectedClip}
-              onApplyEffect={handleApplyEffect}
-              onApplyTransition={handleApplyTransition}
-              onApplyBehavior={handleApplyBehavior}
-              onAddSfxAudio={handleAddSfxAudio}
-            />
-          )}
-
-          <div className="w-[340px] min-w-[300px] h-full">
-            <Inspector
-              selectedClip={selectedClip}
-              project={project}
-              currentTime={currentTime}
-              onUpdateClip={handleUpdateClip}
-              onDeleteClip={handleDeleteClip}
-              onDetachAudio={handleDetachAudio}
-            />
+      {/* 1. DESKTOP 3-PANE WORKSPACE (>= 1024px) */}
+      <div className="hidden lg:flex flex-col flex-1 min-h-0">
+        <div className="flex-1 flex min-h-0">
+          <div className="w-1/4 min-w-[280px] max-w-[360px] h-full border-r border-[#2c2c2e]">
+            {mediaBrowserElement}
           </div>
+
+          <div className="flex-1 h-full min-w-0">
+            {viewerElement}
+          </div>
+
+          {/* Right Dock: Inspector & Effects */}
+          <div className="flex h-full border-l border-[#2c2c2e]">
+            {isEffectsBrowserOpen && (
+              <div className="w-80 h-full border-r border-[#2c2c2e]">
+                {effectsBrowserElement}
+              </div>
+            )}
+
+            <div className="w-[340px] min-w-[300px] h-full">
+              {inspectorElement}
+            </div>
+          </div>
+        </div>
+
+        {/* Timeline Bottom Dock */}
+        <div className="h-[290px] border-t border-[#2c2c2e]">
+          {timelineElement}
         </div>
       </div>
 
-      <div className="h-[290px] border-t-2 border-fcp-border">
-        <Timeline
-          project={project}
-          assets={assets}
-          currentTime={currentTime}
-          totalDuration={totalDuration}
-          selectedClipId={selectedClipId}
-          activeTool={activeTool}
-          snappingEnabled={snappingEnabled}
-          skimmerEnabled={skimmerEnabled}
-          onSelectClip={(clip) => setSelectedClipId(clip ? clip.id : null)}
-          onSeek={(t) => setCurrentTime(t)}
-          onUpdateSpine={handleUpdateSpine}
-          onSetActiveTool={setActiveTool}
-          onToggleSnapping={() => setSnappingEnabled((s) => !s)}
-          onToggleSkimmer={() => setSkimmerEnabled((s) => !s)}
-          onBladeAtPlayhead={handleBladeAtPlayhead}
-          onInsertGap={handleInsertGap}
-          onToggleRoleMute={handleToggleRoleMute}
-          onToggleMarkerComplete={handleToggleMarkerComplete}
-        />
+      {/* 2. MOBILE & TABLET ADAPTIVE WORKSPACE (< 1024px) */}
+      <div className="flex lg:hidden flex-col flex-1 min-h-0 bg-[#161618]">
+        {/* Upper: Video Viewer */}
+        <div className="h-[46%] min-h-[200px] max-h-[420px] w-full">
+          {viewerElement}
+        </div>
+
+        {/* Apple Segmented Tab Switcher Bar */}
+        <nav className="h-11 bg-[#18181a] border-y border-[#2c2c2e] flex items-center justify-around px-2 select-none shrink-0">
+          <button
+            onClick={() => setMobileTab('timeline')}
+            className={`flex-1 py-1.5 flex items-center justify-center gap-1.5 rounded-md text-xs font-medium transition-all ${
+              mobileTab === 'timeline'
+                ? 'bg-[#2c2c2e] text-white shadow-sm'
+                : 'text-[#8e8e93] hover:text-[#d1d1d6]'
+            }`}
+          >
+            <Film size={13} />
+            <span>Timeline</span>
+          </button>
+
+          <button
+            onClick={() => setMobileTab('media')}
+            className={`flex-1 py-1.5 flex items-center justify-center gap-1.5 rounded-md text-xs font-medium transition-all ${
+              mobileTab === 'media'
+                ? 'bg-[#2c2c2e] text-white shadow-sm'
+                : 'text-[#8e8e93] hover:text-[#d1d1d6]'
+            }`}
+          >
+            <Folder size={13} />
+            <span>Clips</span>
+          </button>
+
+          <button
+            onClick={() => setMobileTab('inspector')}
+            className={`flex-1 py-1.5 flex items-center justify-center gap-1.5 rounded-md text-xs font-medium transition-all ${
+              mobileTab === 'inspector'
+                ? 'bg-[#2c2c2e] text-white shadow-sm'
+                : 'text-[#8e8e93] hover:text-[#d1d1d6]'
+            }`}
+          >
+            <Sliders size={13} />
+            <span>Inspector</span>
+          </button>
+
+          <button
+            onClick={() => setMobileTab('effects')}
+            className={`flex-1 py-1.5 flex items-center justify-center gap-1.5 rounded-md text-xs font-medium transition-all ${
+              mobileTab === 'effects'
+                ? 'bg-[#2c2c2e] text-white shadow-sm'
+                : 'text-[#8e8e93] hover:text-[#d1d1d6]'
+            }`}
+          >
+            <Sparkles size={13} />
+            <span>Effects</span>
+          </button>
+        </nav>
+
+        {/* Lower: Active Tab Workspace */}
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          {mobileTab === 'timeline' && timelineElement}
+          {mobileTab === 'media' && mediaBrowserElement}
+          {mobileTab === 'inspector' && inspectorElement}
+          {mobileTab === 'effects' && effectsBrowserElement}
+        </div>
       </div>
 
       {/* MODALS */}

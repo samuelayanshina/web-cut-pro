@@ -184,30 +184,30 @@ export const Timeline: React.FC<TimelineProps> = ({
       {/* 2. TIMELINE MAIN WORKSPACE */}
       <div className="flex-1 flex flex-col h-full min-w-0">
         {/* Timeline Control Toolbar */}
-        <div className="h-9 bg-fcp-header border-b border-fcp-border flex items-center justify-between px-3">
+        <div className="h-9 bg-[#18181a] border-b border-[#2c2c2e] flex items-center justify-between px-3">
           {/* Left: Index Button + Tools */}
           <div className="flex items-center gap-1">
             <button
               onClick={() => setIsIndexOpen(!isIndexOpen)}
-              className={`px-2 py-1 rounded transition-colors flex items-center gap-1 font-bold text-[10px] uppercase tracking-wider ${
+              className={`px-2 py-1 rounded-md transition-colors flex items-center gap-1 font-medium text-[11px] ${
                 isIndexOpen
-                  ? 'bg-amber-500 text-black shadow'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+                  ? 'bg-[#2c2c2e] text-white border border-[#3e3e42]'
+                  : 'text-[#8e8e93] hover:text-[#d1d1d6] hover:bg-[#242426]'
               }`}
               title="Toggle Timeline Index (Clips, Roles, Markers)"
             >
-              <Layers size={12} />
+              <Layers size={13} />
               <span>Index</span>
             </button>
 
-            <div className="h-4 w-[1px] bg-gray-700 mx-1" />
+            <div className="h-4 w-[1px] bg-[#2c2c2e] mx-1" />
 
             <button
               onClick={() => onSetActiveTool('select')}
-              className={`p-1.5 rounded transition-colors ${
+              className={`p-1.5 rounded-md transition-colors ${
                 activeTool === 'select'
-                  ? 'bg-fcp-accent text-white shadow-sm'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+                  ? 'bg-[#2c2c2e] text-white border border-[#3e3e42]'
+                  : 'text-[#8e8e93] hover:text-[#d1d1d6] hover:bg-[#242426]'
               }`}
               title="Select Tool (A)"
             >
@@ -216,10 +216,10 @@ export const Timeline: React.FC<TimelineProps> = ({
 
             <button
               onClick={() => onSetActiveTool('trim')}
-              className={`p-1.5 rounded transition-colors ${
+              className={`p-1.5 rounded-md transition-colors ${
                 activeTool === 'trim'
-                  ? 'bg-fcp-accent text-white shadow-sm'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+                  ? 'bg-[#2c2c2e] text-white border border-[#3e3e42]'
+                  : 'text-[#8e8e93] hover:text-[#d1d1d6] hover:bg-[#242426]'
               }`}
               title="Trim Tool (T)"
             >
@@ -228,10 +228,10 @@ export const Timeline: React.FC<TimelineProps> = ({
 
             <button
               onClick={() => onSetActiveTool('blade')}
-              className={`p-1.5 rounded transition-colors ${
+              className={`p-1.5 rounded-md transition-colors ${
                 activeTool === 'blade'
-                  ? 'bg-fcp-accent text-white shadow-sm'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+                  ? 'bg-[#2c2c2e] text-white border border-[#3e3e42]'
+                  : 'text-[#8e8e93] hover:text-[#d1d1d6] hover:bg-[#242426]'
               }`}
               title="Blade Tool (B)"
             >
@@ -240,51 +240,45 @@ export const Timeline: React.FC<TimelineProps> = ({
 
             <button
               onClick={() => onSetActiveTool('hand')}
-              className={`p-1.5 rounded transition-colors ${
+              className={`p-1.5 rounded-md transition-colors ${
                 activeTool === 'hand'
-                  ? 'bg-fcp-accent text-white shadow-sm'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+                  ? 'bg-[#2c2c2e] text-white border border-[#3e3e42]'
+                  : 'text-[#8e8e93] hover:text-[#d1d1d6] hover:bg-[#242426]'
               }`}
               title="Hand Tool (H)"
             >
               <Hand size={14} />
             </button>
 
-            <div className="h-4 w-[1px] bg-gray-700 mx-1.5" />
+            <div className="h-4 w-[1px] bg-[#2c2c2e] mx-1" />
 
             <button
               onClick={onBladeAtPlayhead}
-              className="flex items-center gap-1 px-2 py-1 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded transition-colors"
+              className="flex items-center gap-1.5 px-2 py-1 text-[#c7c7cc] hover:text-white hover:bg-[#242426] rounded-md transition-colors text-xs font-normal"
               title="Blade at Playhead (⌘B)"
             >
-              <Split size={13} className="text-amber-400" />
+              <Split size={13} className="text-[#8e8e93]" />
               <span className="hidden sm:inline">Blade</span>
             </button>
 
             <button
               onClick={onInsertGap}
-              className="flex items-center gap-1 px-2 py-1 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded transition-colors"
+              className="flex items-center gap-1.5 px-2 py-1 text-[#c7c7cc] hover:text-white hover:bg-[#242426] rounded-md transition-colors text-xs font-normal"
               title="Insert Gap Clip (⌥W)"
             >
-              <Plus size={13} className="text-blue-400" />
+              <Plus size={13} className="text-[#8e8e93]" />
               <span className="hidden sm:inline">Gap</span>
             </button>
-          </div>
-
-          {/* Center Indicator */}
-          <div className="hidden md:flex items-center gap-2 text-[11px] text-gray-400 font-medium">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Magnetic Storyline • Optical Flow Active</span>
           </div>
 
           {/* Right Controls */}
           <div className="flex items-center gap-2">
             <button
               onClick={onToggleSkimmer}
-              className={`p-1.5 rounded transition-colors ${
+              className={`p-1.5 rounded-md transition-colors ${
                 skimmerEnabled
-                  ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+                  ? 'bg-[#2c2c2e] text-[#0a84ff] border border-[#3e3e42]'
+                  : 'text-[#8e8e93] hover:text-[#d1d1d6] hover:bg-[#242426]'
               }`}
               title="Toggle Skimmer (S)"
             >
@@ -293,30 +287,30 @@ export const Timeline: React.FC<TimelineProps> = ({
 
             <button
               onClick={onToggleSnapping}
-              className={`p-1.5 rounded transition-colors ${
+              className={`p-1.5 rounded-md transition-colors ${
                 snappingEnabled
-                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/40'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+                  ? 'bg-[#2c2c2e] text-[#0a84ff] border border-[#3e3e42]'
+                  : 'text-[#8e8e93] hover:text-[#d1d1d6] hover:bg-[#242426]'
               }`}
               title="Toggle Snapping (N)"
             >
               <Magnet size={14} />
             </button>
 
-            <div className="h-4 w-[1px] bg-gray-700 mx-1" />
+            <div className="h-4 w-[1px] bg-[#2c2c2e] mx-1" />
 
             <div className="flex items-center gap-1.5">
-              <ZoomOut size={13} className="text-gray-500" />
+              <ZoomOut size={13} className="text-[#636366]" />
               <input
                 type="range"
                 min="20"
                 max="150"
                 value={pixelsPerSecond}
                 onChange={(e) => setPixelsPerSecond(Number(e.target.value))}
-                className="w-16 sm:w-24 accent-fcp-accent h-1 bg-gray-700 rounded cursor-pointer"
+                className="w-16 sm:w-24 accent-[#0071e3] h-1 bg-[#38383a] rounded cursor-pointer"
                 title="Zoom Level"
               />
-              <ZoomIn size={13} className="text-gray-500" />
+              <ZoomIn size={13} className="text-[#636366]" />
             </div>
           </div>
         </div>

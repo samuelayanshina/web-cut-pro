@@ -1,3 +1,4 @@
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Play, 
   Share2, 
@@ -5,7 +6,6 @@ import {
   Keyboard, 
   RotateCcw, 
   Scissors, 
-  HelpCircle,
   Video,
   Layers,
   Sparkles,
@@ -14,7 +14,9 @@ import {
   MessageSquare,
   Undo2,
   Redo2,
-  ShieldCheck
+  MoreHorizontal,
+  Download,
+  Upload
 } from 'lucide-react';
 import { Timecode } from '../engine/Timecode';
 import { FCPProject } from '../types/fcp';
@@ -58,123 +60,210 @@ export const MenuBar: React.FC<MenuBarProps> = ({
   onRunSceneDetection,
   onGenerateCaptions,
 }) => {
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target as Node)) {
+        setShowMoreMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   return (
-    <div className="h-10 bg-fcp-header border-b border-fcp-border flex items-center justify-between px-3 select-none text-xs">
-      {/* Left: macOS App & Menus */}
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-1.5 font-semibold text-white">
-          <div className="w-5 h-5 bg-gradient-to-tr from-blue-600 via-indigo-500 to-amber-500 rounded flex items-center justify-center text-white shadow-sm">
-            <Video size={12} className="stroke-[2.5]" />
+    <header className="h-11 bg-[#18181a] border-b border-[#2c2c2e] flex items-center justify-between px-3 md:px-4 select-none text-xs z-30">
+      {/* Left: Apple Clean Branding & Primary Editing Tools */}
+      <div className="flex items-center gap-2 md:gap-3">
+        {/* Apple Minimalist App Icon */}
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-md bg-[#242426] border border-[#38383a] flex items-center justify-center text-white shadow-sm">
+            <Video size={13} className="text-white" />
           </div>
-          <span className="tracking-tight text-sm font-bold bg-gradient-to-r from-gray-100 to-gray-300 bg-clip-text text-transparent">
+          <span className="font-semibold text-white tracking-tight text-[13px] hidden sm:inline">
             Web Cut Pro
           </span>
         </div>
 
-        {/* AI Action Quick Buttons */}
-        <div className="hidden lg:flex items-center gap-1.5 pl-2 border-l border-gray-700">
+        <div className="h-4 w-[1px] bg-[#2c2c2e] hidden md:block" />
+
+        {/* Clean Apple Monochrome Action Buttons (Desktop Only) */}
+        <div className="hidden md:flex items-center gap-1.5">
           <button
             onClick={onOpenSmartConform}
-            className="flex items-center gap-1 px-2 py-0.5 bg-[#1c1c1c] hover:bg-[#282828] border border-gray-700 rounded text-amber-300 text-[10px] font-medium transition-colors"
-            title="Auto-Reframe Project Aspect Ratio (16:9 -> 9:16 Shorts)"
+            className="flex items-center gap-1.5 px-2.5 py-1 bg-[#242426] hover:bg-[#2c2c2e] border border-[#38383a] rounded-md text-[#d1d1d6] hover:text-white text-xs font-normal transition-colors"
+            title="Auto-Reframe Project Aspect Ratio"
           >
-            <Smartphone size={11} />
-            <span>Smart Conform ({project.format.aspectRatio || '16:9'})</span>
+            <Smartphone size={13} className="text-[#a1a1a6]" />
+            <span>Reframe ({project.format.aspectRatio || '16:9'})</span>
           </button>
 
           <button
             onClick={onRunSceneDetection}
-            className="flex items-center gap-1 px-2 py-0.5 bg-[#1c1c1c] hover:bg-[#282828] border border-gray-700 rounded text-blue-300 text-[10px] font-medium transition-colors"
-            title="AI Camera Scene Cut Detection"
+            className="flex items-center gap-1.5 px-2.5 py-1 bg-[#242426] hover:bg-[#2c2c2e] border border-[#38383a] rounded-md text-[#d1d1d6] hover:text-white text-xs font-normal transition-colors"
+            title="Scene Cut Detection"
           >
-            <Split size={11} />
-            <span>Detect Cuts</span>
+            <Scissors size={13} className="text-[#a1a1a6]" />
+            <span>Cut Detect</span>
           </button>
 
           <button
             onClick={onGenerateCaptions}
-            className="flex items-center gap-1 px-2 py-0.5 bg-[#1c1c1c] hover:bg-[#282828] border border-gray-700 rounded text-emerald-300 text-[10px] font-medium transition-colors"
-            title="Auto-Generate Speech Subtitles & Captions"
+            className="flex items-center gap-1.5 px-2.5 py-1 bg-[#242426] hover:bg-[#2c2c2e] border border-[#38383a] rounded-md text-[#d1d1d6] hover:text-white text-xs font-normal transition-colors"
+            title="Generate Captions & Subtitles"
           >
-            <MessageSquare size={11} />
-            <span>Auto Captions</span>
+            <MessageSquare size={13} className="text-[#a1a1a6]" />
+            <span>Captions</span>
           </button>
 
-          {/* Local Sandbox Privacy Badge */}
-          <div 
-            className="hidden xl:flex items-center gap-1 px-2 py-0.5 bg-emerald-950/40 border border-emerald-700/50 rounded text-[10px] text-emerald-400 font-medium"
-            title="100% Client-Side Sandbox: Your videos and edits never leave your machine. Zero server tracking."
+          <button
+            onClick={onToggleEffectsBrowser}
+            className="flex items-center gap-1.5 px-2.5 py-1 bg-[#242426] hover:bg-[#2c2c2e] border border-[#38383a] rounded-md text-[#d1d1d6] hover:text-white text-xs font-normal transition-colors"
+            title="Effects & Transitions Browser (⌘5)"
           >
-            <ShieldCheck size={11} className="text-emerald-400" />
-            <span>Local Sandbox • 100% Private</span>
-          </div>
+            <Sparkles size={13} className="text-[#a1a1a6]" />
+            <span>Effects</span>
+          </button>
         </div>
       </div>
 
-      {/* Center: Digital LED Timecode Display */}
-      <div className="flex items-center gap-3 bg-[#111111] px-4 py-1 rounded-md border border-[#333333] shadow-inner">
-        <span className="text-gray-400 font-medium text-[11px] truncate max-w-[120px] sm:max-w-[200px]">
+      {/* Center: Apple macOS Minimalist Timecode Pill */}
+      <div className="flex items-center gap-2 md:gap-3 bg-[#121214] px-3 py-1 rounded-md border border-[#2c2c2e] shadow-inner">
+        <span className="text-[#8e8e93] font-normal text-xs truncate max-w-[90px] sm:max-w-[150px]">
           {project.name}
         </span>
-        <div className="h-3 w-[1px] bg-gray-700" />
-        <div className="font-mono text-sm tracking-wider text-blue-400 font-bold">
+        <div className="h-3 w-[1px] bg-[#2c2c2e]" />
+        <div className="font-mono text-xs sm:text-sm tracking-wider text-[#0a84ff] font-medium">
           {Timecode.formatSMPTE(currentTime, project.format.frameRate)}
         </div>
-        <div className="hidden sm:block text-[10px] text-gray-500 font-mono">
+        <div className="hidden sm:block text-[11px] text-[#636366] font-mono">
           {project.format.height}p{project.format.frameRate}
         </div>
       </div>
 
-      {/* Right: Actions */}
+      {/* Right: Restrained Plain Controls */}
       <div className="flex items-center gap-1 sm:gap-2">
-        <button
-          onClick={onUndo}
-          disabled={!canUndo}
-          className={`p-1.5 rounded transition-colors ${
-            canUndo ? 'text-gray-300 hover:text-white hover:bg-gray-700/50' : 'text-gray-600 cursor-not-allowed'
-          }`}
-          title="Undo (⌘Z)"
-        >
-          <Undo2 size={15} />
-        </button>
+        {/* Undo / Redo */}
+        <div className="flex items-center">
+          <button
+            onClick={onUndo}
+            disabled={!canUndo}
+            className={`p-1.5 rounded-md transition-colors ${
+              canUndo ? 'text-[#c7c7cc] hover:text-white hover:bg-[#242426]' : 'text-[#48484a] cursor-not-allowed'
+            }`}
+            title="Undo (⌘Z)"
+          >
+            <Undo2 size={14} />
+          </button>
 
-        <button
-          onClick={onRedo}
-          disabled={!canRedo}
-          className={`p-1.5 rounded transition-colors ${
-            canRedo ? 'text-gray-300 hover:text-white hover:bg-gray-700/50' : 'text-gray-600 cursor-not-allowed'
-          }`}
-          title="Redo (⇧⌘Z)"
-        >
-          <Redo2 size={15} />
-        </button>
+          <button
+            onClick={onRedo}
+            disabled={!canRedo}
+            className={`p-1.5 rounded-md transition-colors ${
+              canRedo ? 'text-[#c7c7cc] hover:text-white hover:bg-[#242426]' : 'text-[#48484a] cursor-not-allowed'
+            }`}
+            title="Redo (⇧⌘Z)"
+          >
+            <Redo2 size={14} />
+          </button>
+        </div>
 
-        <div className="h-4 w-[1px] bg-gray-700 mx-1" />
+        <div className="h-4 w-[1px] bg-[#2c2c2e] mx-0.5" />
 
+        {/* Shortcuts & Reset */}
         <button
           onClick={onOpenShortcuts}
-          className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded transition-colors"
-          title="Keyboard Shortcuts"
+          className="p-1.5 text-[#8e8e93] hover:text-white hover:bg-[#242426] rounded-md transition-colors hidden sm:block"
+          title="Keyboard Shortcuts (⌘/)"
         >
-          <Keyboard size={15} />
+          <Keyboard size={14} />
         </button>
 
         <button
           onClick={onResetDemo}
-          className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded transition-colors"
-          title="Reset Project"
+          className="p-1.5 text-[#8e8e93] hover:text-white hover:bg-[#242426] rounded-md transition-colors hidden sm:block"
+          title="Reset Project to Factory Default"
         >
-          <RotateCcw size={15} />
+          <RotateCcw size={14} />
         </button>
 
-        {/* FCPXML Import */}
-        <label
-          className="flex items-center gap-1.5 px-2 py-1 bg-[#222222] hover:bg-[#2e2e2e] border border-gray-700 rounded text-gray-300 text-xs font-medium cursor-pointer transition-colors"
-          title="Import Apple Final Cut Pro XML (.fcpxml)"
-        >
-          <FileCode size={13} className="text-blue-400" />
-          <span className="hidden sm:inline">Import XML</span>
+        {/* More Menu for Secondary Actions */}
+        <div className="relative" ref={moreMenuRef}>
+          <button
+            onClick={() => setShowMoreMenu(!showMoreMenu)}
+            className="p-1.5 text-[#8e8e93] hover:text-white hover:bg-[#242426] rounded-md transition-colors"
+            title="Project Options & XML"
+          >
+            <MoreHorizontal size={15} />
+          </button>
+
+          {showMoreMenu && (
+            <div className="absolute right-0 mt-1.5 w-52 bg-[#1c1c1e] border border-[#2c2c2e] rounded-xl shadow-2xl p-1.5 z-50 text-xs">
+              <button
+                onClick={() => {
+                  fileInputRef.current?.click();
+                  setShowMoreMenu(false);
+                }}
+                className="w-full px-2.5 py-1.5 flex items-center gap-2 text-[#d1d1d6] hover:text-white hover:bg-[#2c2c2e] rounded-lg transition-colors text-left"
+              >
+                <Upload size={13} className="text-[#8e8e93]" />
+                <span>Import FCPXML...</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  onExportFcpXml();
+                  setShowMoreMenu(false);
+                }}
+                className="w-full px-2.5 py-1.5 flex items-center gap-2 text-[#d1d1d6] hover:text-white hover:bg-[#2c2c2e] rounded-lg transition-colors text-left"
+              >
+                <Download size={13} className="text-[#8e8e93]" />
+                <span>Export FCPXML...</span>
+              </button>
+
+              <div className="h-[1px] bg-[#2c2c2e] my-1" />
+
+              <button
+                onClick={() => {
+                  onOpenCompressor();
+                  setShowMoreMenu(false);
+                }}
+                className="w-full px-2.5 py-1.5 flex items-center gap-2 text-[#d1d1d6] hover:text-white hover:bg-[#2c2c2e] rounded-lg transition-colors text-left"
+              >
+                <Layers size={13} className="text-[#8e8e93]" />
+                <span>Compressor Settings</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  onOpenShortcuts();
+                  setShowMoreMenu(false);
+                }}
+                className="w-full px-2.5 py-1.5 flex items-center gap-2 text-[#d1d1d6] hover:text-white hover:bg-[#2c2c2e] rounded-lg transition-colors text-left sm:hidden"
+              >
+                <Keyboard size={13} className="text-[#8e8e93]" />
+                <span>Keyboard Shortcuts</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  onResetDemo();
+                  setShowMoreMenu(false);
+                }}
+                className="w-full px-2.5 py-1.5 flex items-center gap-2 text-[#ff453a] hover:bg-[#ff453a]/10 rounded-lg transition-colors text-left sm:hidden"
+              >
+                <RotateCcw size={13} />
+                <span>Reset Project</span>
+              </button>
+            </div>
+          )}
+
           <input
+            ref={fileInputRef}
             type="file"
             accept=".xml,.fcpxml"
             className="hidden"
@@ -184,44 +273,18 @@ export const MenuBar: React.FC<MenuBarProps> = ({
               }
             }}
           />
-        </label>
+        </div>
 
-        <button
-          onClick={onExportFcpXml}
-          className="flex items-center gap-1.5 px-2.5 py-1 bg-[#2a2a2a] hover:bg-[#383838] border border-gray-600 rounded text-gray-200 text-xs font-medium transition-colors"
-          title="Export Apple Final Cut Pro XML (.fcpxml)"
-        >
-          <FileCode size={13} className="text-amber-400" />
-          <span className="hidden sm:inline">Export FCPXML</span>
-        </button>
-
-        <button
-          onClick={onToggleEffectsBrowser}
-          className="flex items-center gap-1.5 px-2.5 py-1 bg-[#222222] hover:bg-[#2e2e2e] border border-purple-800 rounded text-purple-300 text-xs font-medium transition-colors"
-          title="Open Effects & Transitions Browser (⌘5)"
-        >
-          <Sparkles size={13} className="text-purple-400" />
-          <span className="hidden sm:inline">Effects (⌘5)</span>
-        </button>
-
-        <button
-          onClick={onOpenCompressor}
-          className="flex items-center gap-1.5 px-2.5 py-1 bg-[#222222] hover:bg-[#2e2e2e] border border-indigo-800 rounded text-indigo-300 text-xs font-medium transition-colors"
-          title="Apple Compressor Custom Settings"
-        >
-          <Layers size={13} className="text-indigo-400" />
-          <span className="hidden sm:inline">Compressor</span>
-        </button>
-
+        {/* Primary Action Button: Solid Apple Blue */}
         <button
           onClick={onOpenBatchQueue}
-          className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded text-xs font-medium shadow-sm transition-colors"
-          title="FCP Share Destinations & Batch Queue"
+          className="flex items-center gap-1.5 px-3 md:px-3.5 py-1 bg-[#0071e3] hover:bg-[#0077ed] active:scale-[0.98] text-white rounded-md text-xs font-medium shadow-sm transition-all"
+          title="Share Project or Export Master (⌘E)"
         >
           <Share2 size={13} />
           <span>Share</span>
         </button>
       </div>
-    </div>
+    </header>
   );
 };

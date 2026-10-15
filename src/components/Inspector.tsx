@@ -18,7 +18,8 @@ import {
   Camera,
   Tag,
   Scissors,
-  Split
+  Split,
+  Smartphone
 } from 'lucide-react';
 import { TimelineClip, FCPProject, AudioDspSettings, Keyframe, ThreeWayColorWheels, BlendMode, AudioRole } from '../types/fcp';
 import { ColorWheels } from './ColorWheels';
@@ -222,78 +223,68 @@ export const Inspector: React.FC<InspectorProps> = ({
       </div>
 
       {/* Tab Switcher */}
-      <div className="flex items-center border-b border-fcp-border bg-[#1d1d1d] px-1 overflow-x-auto">
+      <div className="flex items-center border-b border-[#2c2c2e] bg-[#18181a] px-1 overflow-x-auto">
         <button
           onClick={() => setActiveTab('video')}
-          className={`flex-1 py-1.5 px-2 flex items-center justify-center gap-1 border-b-2 transition-colors whitespace-nowrap ${
-            activeTab === 'video' ? 'border-fcp-accent text-white font-medium' : 'border-transparent text-gray-400 hover:text-gray-200'
+          className={`flex-1 py-2 px-2.5 flex items-center justify-center gap-1.5 border-b-2 text-xs transition-colors whitespace-nowrap ${
+            activeTab === 'video' ? 'border-[#0071e3] text-white font-medium' : 'border-transparent text-[#8e8e93] hover:text-[#d1d1d6]'
           }`}
         >
-          <Sliders size={12} />
+          <Sliders size={13} />
           <span>Video</span>
         </button>
 
         <button
           onClick={() => setActiveTab('color')}
-          className={`flex-1 py-1.5 px-2 flex items-center justify-center gap-1 border-b-2 transition-colors whitespace-nowrap ${
-            activeTab === 'color' ? 'border-fcp-accent text-white font-medium' : 'border-transparent text-gray-400 hover:text-gray-200'
+          className={`flex-1 py-2 px-2.5 flex items-center justify-center gap-1.5 border-b-2 text-xs transition-colors whitespace-nowrap ${
+            activeTab === 'color' ? 'border-[#0071e3] text-white font-medium' : 'border-transparent text-[#8e8e93] hover:text-[#d1d1d6]'
           }`}
         >
-          <Palette size={12} />
+          <Palette size={13} />
           <span>Color</span>
         </button>
 
         <button
           onClick={() => setActiveTab('dsp')}
-          className={`flex-1 py-1.5 px-2 flex items-center justify-center gap-1 border-b-2 transition-colors whitespace-nowrap ${
-            activeTab === 'dsp' ? 'border-emerald-500 text-emerald-400 font-medium' : 'border-transparent text-gray-400 hover:text-gray-200'
+          className={`flex-1 py-2 px-2.5 flex items-center justify-center gap-1.5 border-b-2 text-xs transition-colors whitespace-nowrap ${
+            activeTab === 'dsp' ? 'border-[#0071e3] text-white font-medium' : 'border-transparent text-[#8e8e93] hover:text-[#d1d1d6]'
           }`}
         >
-          <Activity size={12} />
-          <span>Logic DSP</span>
+          <Volume2 size={13} />
+          <span>Audio</span>
         </button>
 
         <button
-          onClick={() => setActiveTab('fcp12')}
-          className={`flex-1 py-1.5 px-2 flex items-center justify-center gap-1 border-b-2 transition-colors whitespace-nowrap ${
-            activeTab === 'fcp12' ? 'border-sky-500 text-sky-400 font-medium' : 'border-transparent text-gray-400 hover:text-gray-200'
+          onClick={() => setActiveTab('optics')}
+          className={`flex-1 py-2 px-2.5 flex items-center justify-center gap-1.5 border-b-2 text-xs transition-colors whitespace-nowrap ${
+            activeTab === 'optics' ? 'border-[#0071e3] text-white font-medium' : 'border-transparent text-[#8e8e93] hover:text-[#d1d1d6]'
           }`}
         >
-          <Sparkles size={12} className="text-sky-400" />
-          <span>FCP 12 AI</span>
+          <Sparkles size={13} />
+          <span>Effects</span>
         </button>
 
         {selectedClip.type === 'title' && (
           <button
             onClick={() => setActiveTab('text')}
-            className={`flex-1 py-1.5 px-2 flex items-center justify-center gap-1 border-b-2 transition-colors whitespace-nowrap ${
-              activeTab === 'text' ? 'border-purple-500 text-purple-400 font-medium' : 'border-transparent text-gray-400 hover:text-gray-200'
+            className={`flex-1 py-2 px-2.5 flex items-center justify-center gap-1.5 border-b-2 text-xs transition-colors whitespace-nowrap ${
+              activeTab === 'text' ? 'border-[#0071e3] text-white font-medium' : 'border-transparent text-[#8e8e93] hover:text-[#d1d1d6]'
             }`}
           >
-            <Type size={12} />
-            <span>3D Text</span>
+            <Type size={13} />
+            <span>Text</span>
           </button>
         )}
-
-        <button
-          onClick={() => setActiveTab('optics')}
-          className={`flex-1 py-1.5 px-2 flex items-center justify-center gap-1 border-b-2 transition-colors whitespace-nowrap ${
-            activeTab === 'optics' ? 'border-cyan-500 text-cyan-400 font-medium' : 'border-transparent text-gray-400 hover:text-gray-200'
-          }`}
-        >
-          <Sparkles size={12} />
-          <span>Optics & FX</span>
-        </button>
 
         {selectedClip.auditions && selectedClip.auditions.length > 0 && (
           <button
             onClick={() => setActiveTab('auditions')}
-            className={`flex-1 py-1.5 px-2 flex items-center justify-center gap-1 border-b-2 transition-colors whitespace-nowrap ${
-              activeTab === 'auditions' ? 'border-amber-500 text-amber-400 font-medium' : 'border-transparent text-gray-400 hover:text-gray-200'
+            className={`flex-1 py-2 px-2.5 flex items-center justify-center gap-1.5 border-b-2 text-xs transition-colors whitespace-nowrap ${
+              activeTab === 'auditions' ? 'border-[#0071e3] text-white font-medium' : 'border-transparent text-[#8e8e93] hover:text-[#d1d1d6]'
             }`}
           >
-            <Radio size={12} />
-            <span>Auditions</span>
+            <Radio size={13} />
+            <span>Takes</span>
           </button>
         )}
       </div>
@@ -303,26 +294,26 @@ export const Inspector: React.FC<InspectorProps> = ({
         {/* VIDEO TAB (AI Smart Conform & Retiming) */}
         {activeTab === 'video' && (
           <div className="space-y-3">
-            {/* AI Smart Conform Auto-Reframe Focus */}
-            <div className="p-2.5 bg-[#181818] rounded-md border border-gray-800 space-y-2">
-              <div className="flex items-center justify-between font-bold text-gray-300 text-[11px]">
-                <div className="flex items-center gap-1">
-                  <Sparkles size={13} className="text-amber-400" />
-                  <span>AI Smart Conform (Auto-Reframe)</span>
+            {/* Auto-Reframe Focus */}
+            <div className="p-3 bg-[#1c1c1e] rounded-lg border border-[#2c2c2e] space-y-2">
+              <div className="flex items-center justify-between font-medium text-[#f5f5f7] text-xs">
+                <div className="flex items-center gap-1.5">
+                  <Smartphone size={13} className="text-[#8e8e93]" />
+                  <span>Auto Reframe</span>
                 </div>
                 <input
                   type="checkbox"
                   checked={selectedClip.smartConform?.enabled || false}
                   onChange={(e) => updateSmartConform({ enabled: e.target.checked })}
-                  className="accent-amber-500"
+                  className="accent-[#0071e3] rounded cursor-pointer"
                 />
               </div>
 
               {selectedClip.smartConform?.enabled && (
-                <div>
-                  <div className="flex justify-between text-[10px] text-gray-400 mb-0.5">
-                    <span>Focal Tracking Pan X</span>
-                    <span className="font-mono">{selectedClip.smartConform.trackingFocusX}%</span>
+                <div className="pt-1">
+                  <div className="flex justify-between text-[11px] text-[#8e8e93] mb-1">
+                    <span>Focal Pan X</span>
+                    <span className="font-mono text-[#d1d1d6]">{selectedClip.smartConform.trackingFocusX}%</span>
                   </div>
                   <input
                     type="range"
@@ -330,20 +321,20 @@ export const Inspector: React.FC<InspectorProps> = ({
                     max="50"
                     value={selectedClip.smartConform.trackingFocusX}
                     onChange={(e) => updateSmartConform({ trackingFocusX: Number(e.target.value) })}
-                    className="w-full accent-amber-500 h-1 bg-gray-700 rounded cursor-pointer"
+                    className="w-full accent-[#0071e3] h-1 bg-[#38383a] rounded cursor-pointer"
                   />
                 </div>
               )}
             </div>
 
             {/* Retiming & Variable Speed */}
-            <div className="p-2.5 bg-[#181818] rounded-md border border-gray-800 space-y-2">
-              <div className="flex items-center justify-between font-bold text-gray-300 text-[11px]">
-                <div className="flex items-center gap-1">
-                  <FastForward size={13} className="text-amber-400" />
+            <div className="p-3 bg-[#1c1c1e] rounded-lg border border-[#2c2c2e] space-y-2">
+              <div className="flex items-center justify-between font-medium text-[#f5f5f7] text-xs">
+                <div className="flex items-center gap-1.5">
+                  <FastForward size={13} className="text-[#8e8e93]" />
                   <span>Retiming & Speed</span>
                 </div>
-                <span className="font-mono text-amber-400">
+                <span className="font-mono text-[#d1d1d6] text-xs">
                   {selectedClip.retiming?.speed ? `${selectedClip.retiming.speed}x` : '1.0x'}
                 </span>
               </div>
@@ -356,7 +347,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                   step="0.25"
                   value={selectedClip.retiming?.speed || 1.0}
                   onChange={(e) => updateRetiming({ speed: Number(e.target.value) })}
-                  className="w-full accent-amber-500 h-1 bg-gray-700 rounded cursor-pointer"
+                  className="w-full accent-[#0071e3] h-1 bg-[#38383a] rounded cursor-pointer"
                 />
               </div>
 

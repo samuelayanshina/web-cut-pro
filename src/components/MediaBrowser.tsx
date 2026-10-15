@@ -48,40 +48,40 @@ export const MediaBrowser: React.FC<MediaBrowserProps> = ({
   return (
     <div className="flex flex-col h-full bg-fcp-panel border-r border-fcp-border select-none text-xs">
       {/* Top Sidebar Tabs (Libraries / Titles / Generators) */}
-      <div className="flex items-center border-b border-fcp-border bg-fcp-header px-2">
+      <div className="flex items-center border-b border-[#2c2c2e] bg-[#18181a] px-2">
         <button
           onClick={() => setActiveTab('media')}
           className={`flex items-center gap-1.5 py-2 px-3 border-b-2 font-medium transition-colors ${
             activeTab === 'media'
-              ? 'border-fcp-accent text-white'
-              : 'border-transparent text-gray-400 hover:text-gray-200'
+              ? 'border-[#0071e3] text-white'
+              : 'border-transparent text-[#8e8e93] hover:text-[#d1d1d6]'
           }`}
         >
-          <Film size={14} />
-          <span>Browser</span>
+          <Film size={13} />
+          <span>Clips</span>
         </button>
 
         <button
           onClick={() => setActiveTab('titles')}
           className={`flex items-center gap-1.5 py-2 px-3 border-b-2 font-medium transition-colors ${
             activeTab === 'titles'
-              ? 'border-fcp-accent text-white'
-              : 'border-transparent text-gray-400 hover:text-gray-200'
+              ? 'border-[#0071e3] text-white'
+              : 'border-transparent text-[#8e8e93] hover:text-[#d1d1d6]'
           }`}
         >
-          <Type size={14} />
-          <span>3D Titles & Motion</span>
+          <Type size={13} />
+          <span>Titles</span>
         </button>
 
         <button
           onClick={() => setActiveTab('generators')}
           className={`flex items-center gap-1.5 py-2 px-3 border-b-2 font-medium transition-colors ${
             activeTab === 'generators'
-              ? 'border-fcp-accent text-white'
-              : 'border-transparent text-gray-400 hover:text-gray-200'
+              ? 'border-[#0071e3] text-white'
+              : 'border-transparent text-[#8e8e93] hover:text-[#d1d1d6]'
           }`}
         >
-          <Palette size={14} />
+          <Palette size={13} />
           <span>Generators</span>
         </button>
       </div>
@@ -141,8 +141,8 @@ export const MediaBrowser: React.FC<MediaBrowserProps> = ({
             </span>
 
             {/* Import Media Button */}
-            <label className="flex items-center gap-1 px-2 py-1 bg-fcp-accent/20 hover:bg-fcp-accent/30 text-blue-400 border border-fcp-accent/40 rounded cursor-pointer transition-colors text-[11px]">
-              <Upload size={12} />
+            <label className="flex items-center gap-1.5 px-2.5 py-1 bg-[#242426] hover:bg-[#2c2c2e] text-[#d1d1d6] hover:text-white border border-[#38383a] rounded-md cursor-pointer transition-colors text-xs font-normal">
+              <Upload size={12} className="text-[#8e8e93]" />
               <span>Import Media</span>
               <input
                 type="file"

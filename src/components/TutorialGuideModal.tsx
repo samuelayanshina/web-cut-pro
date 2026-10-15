@@ -14,7 +14,8 @@ import {
   HelpCircle,
   ArrowRight,
   ExternalLink,
-  Laptop
+  Laptop,
+  Download
 } from 'lucide-react';
 
 interface TutorialGuideModalProps {
@@ -126,12 +127,34 @@ export const TutorialGuideModal: React.FC<TutorialGuideModalProps> = ({ isOpen, 
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-2 text-[#8e8e93] hover:text-white hover:bg-[#2c2c2e] rounded-xl transition-colors"
-          >
-            <X size={18} />
-          </button>
+          <div className="flex items-center gap-2">
+            <a
+              href="/web_cut_pro_final_cut_companion_guide.pdf"
+              download="web_cut_pro_final_cut_companion_guide.pdf"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[#242426] hover:bg-[#2c2c2e] border border-[#38383a] rounded-lg text-xs font-normal text-[#d1d1d6] hover:text-white transition-all shadow-sm"
+              title="Download Printable 3-Page PDF"
+            >
+              <Download size={13} className="text-[#0a84ff]" />
+              <span className="hidden sm:inline">PDF</span>
+            </a>
+
+            <a
+              href="/web_cut_pro_final_cut_companion_guide.docx"
+              download="web_cut_pro_final_cut_companion_guide.docx"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[#242426] hover:bg-[#2c2c2e] border border-[#38383a] rounded-lg text-xs font-normal text-[#d1d1d6] hover:text-white transition-all shadow-sm"
+              title="Download Microsoft Word .docx Document"
+            >
+              <Download size={13} className="text-[#30d158]" />
+              <span className="hidden sm:inline">Word (.docx)</span>
+            </a>
+
+            <button
+              onClick={onClose}
+              className="p-1.5 text-[#8e8e93] hover:text-white hover:bg-[#2c2c2e] rounded-xl transition-colors ml-1"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         {/* Search & Segmented Navigation Tabs */}

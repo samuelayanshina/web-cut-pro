@@ -16,7 +16,8 @@ import {
   Redo2,
   MoreHorizontal,
   Download,
-  Upload
+  Upload,
+  BookOpen
 } from 'lucide-react';
 import { Timecode } from '../engine/Timecode';
 import { FCPProject } from '../types/fcp';
@@ -35,6 +36,7 @@ interface MenuBarProps {
   onExportFcpXml: () => void;
   onImportFcpXml: (file: File) => void;
   onOpenShortcuts: () => void;
+  onOpenTutorialGuide?: () => void;
   onResetDemo: () => void;
   onOpenSmartConform: () => void;
   onRunSceneDetection: () => void;
@@ -55,6 +57,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({
   onExportFcpXml,
   onImportFcpXml,
   onOpenShortcuts,
+  onOpenTutorialGuide,
   onResetDemo,
   onOpenSmartConform,
   onRunSceneDetection,
@@ -127,6 +130,15 @@ export const MenuBar: React.FC<MenuBarProps> = ({
           >
             <Sparkles size={13} className="text-[#a1a1a6]" />
             <span>Effects</span>
+          </button>
+
+          <button
+            onClick={onOpenTutorialGuide}
+            className="flex items-center gap-1.5 px-2.5 py-1 bg-[#242426] hover:bg-[#2c2c2e] border border-[#38383a] rounded-md text-[#d1d1d6] hover:text-white text-xs font-normal transition-colors"
+            title="Final Cut Pro Tutorial Companion Guide"
+          >
+            <BookOpen size={13} className="text-[#0a84ff]" />
+            <span>Tutorial Guide</span>
           </button>
         </div>
       </div>
@@ -236,6 +248,17 @@ export const MenuBar: React.FC<MenuBarProps> = ({
               >
                 <Layers size={13} className="text-[#8e8e93]" />
                 <span>Compressor Settings</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  onOpenTutorialGuide?.();
+                  setShowMoreMenu(false);
+                }}
+                className="w-full px-2.5 py-1.5 flex items-center gap-2 text-[#d1d1d6] hover:text-white hover:bg-[#2c2c2e] rounded-lg transition-colors text-left"
+              >
+                <BookOpen size={13} className="text-[#0a84ff]" />
+                <span>Tutorial Companion Guide</span>
               </button>
 
               <button

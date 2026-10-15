@@ -20,6 +20,7 @@ import { SubFrameAudioEngine } from './engine/SubFrameAudioEngine';
 import { BatchShareQueueModal } from './components/BatchShareQueueModal';
 import { EffectsBrowser } from './components/EffectsBrowser';
 import { CompressorModal } from './components/CompressorModal';
+import { TutorialGuideModal } from './components/TutorialGuideModal';
 import { FcpXmlEngine } from './engine/FcpXml';
 import { AdminPortal } from './components/admin/AdminPortal';
 import { analyticsEngine } from './engine/AnalyticsEngine';
@@ -428,6 +429,7 @@ export const App: React.FC = () => {
   const [isEffectsBrowserOpen, setIsEffectsBrowserOpen] = useState(false);
   const [isCompressorOpen, setIsCompressorOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+  const [isTutorialGuideOpen, setIsTutorialGuideOpen] = useState(false);
   const [isSmartConformOpen, setIsSmartConformOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState<'timeline' | 'media' | 'inspector' | 'effects'>('timeline');
   // Client-side route for /admin enterprise portal
@@ -658,6 +660,9 @@ export const App: React.FC = () => {
       } else if ((e.metaKey || e.ctrlKey) && (e.key === '5')) {
         e.preventDefault();
         setIsEffectsBrowserOpen((prev) => !prev);
+      } else if (e.key === '?' || ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === '/')) {
+        e.preventDefault();
+        setIsTutorialGuideOpen((prev) => !prev);
       } else if ((e.metaKey || e.ctrlKey) && e.altKey && (e.key === 'a' || e.key === 'A')) {
         e.preventDefault();
         navigateToAdmin();
@@ -1252,6 +1257,7 @@ export const App: React.FC = () => {
         onExportFcpXml={() => setIsExportOpen(true)}
         onImportFcpXml={handleImportFcpXml}
         onOpenShortcuts={() => setIsShortcutsOpen(true)}
+        onOpenTutorialGuide={() => setIsTutorialGuideOpen(true)}
         onResetDemo={() => {
           try {
             localStorage.removeItem(LOCAL_STORAGE_PROJECT_KEY);
@@ -1397,6 +1403,11 @@ export const App: React.FC = () => {
       <ShortcutsModal
         isOpen={isShortcutsOpen}
         onClose={() => setIsShortcutsOpen(false)}
+      />
+
+      <TutorialGuideModal
+        isOpen={isTutorialGuideOpen}
+        onClose={() => setIsTutorialGuideOpen(false)}
       />
     </div>
   );

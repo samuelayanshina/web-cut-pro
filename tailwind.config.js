@@ -28,7 +28,9 @@ export default {
       },
       fontFamily: {
         sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"SF Pro Text"', 'system-ui', 'sans-serif'],
-        mono: ['"SF Mono"', 'ui-monospace', 'Menlo', 'monospace']
+        mono: ['"SF Mono"', 'ui-monospace', 'Menlo', 'monospace'],
+        poppins: ['"Poppins"', 'sans-serif'],
+        inter: ['"Inter"', 'sans-serif'],
       }
     },
   },

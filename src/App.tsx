@@ -21,8 +21,7 @@ import { BatchShareQueueModal } from './components/BatchShareQueueModal';
 import { EffectsBrowser } from './components/EffectsBrowser';
 import { CompressorModal } from './components/CompressorModal';
 import { FcpXmlEngine } from './engine/FcpXml';
-import { LibraryHierarchyEngine } from './engine/LibraryHierarchyEngine';
-import { AdminDashboardModal } from './components/AdminDashboardModal';
+import { AdminPortal } from './components/admin/AdminPortal';
 import { analyticsEngine } from './engine/AnalyticsEngine';
 import { Timecode } from './engine/Timecode';
 
@@ -429,7 +428,34 @@ export const App: React.FC = () => {
   const [isCompressorOpen, setIsCompressorOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isSmartConformOpen, setIsSmartConformOpen] = useState(false);
-  const [isAdminDashboardOpen, setIsAdminDashboardOpen] = useState(false);
+  // Client-side route for /admin enterprise portal
+  const [currentRoute, setCurrentRoute] = useState<'editor' | 'admin'>(() => {
+    if (typeof window !== 'undefined') {
+      return window.location.pathname.startsWith('/admin') || window.location.hash === '#admin'
+        ? 'admin'
+        : 'editor';
+    }
+    return 'editor';
+  });
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const isAdm = window.location.pathname.startsWith('/admin') || window.location.hash === '#admin';
+      setCurrentRoute(isAdm ? 'admin' : 'editor');
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const navigateToEditor = useCallback(() => {
+    window.history.pushState(null, '', '/');
+    setCurrentRoute('editor');
+  }, []);
+
+  const navigateToAdmin = useCallback(() => {
+    window.history.pushState(null, '', '/admin');
+    setCurrentRoute('admin');
+  }, []);
 
   const lastTimeRef = useRef<number | null>(null);
   const animFrameRef = useRef<number | null>(null);
@@ -632,7 +658,7 @@ export const App: React.FC = () => {
         setIsEffectsBrowserOpen((prev) => !prev);
       } else if ((e.metaKey || e.ctrlKey) && e.altKey && (e.key === 'a' || e.key === 'A')) {
         e.preventDefault();
-        setIsAdminDashboardOpen((prev) => !prev);
+        navigateToAdmin();
       }
     };
 
@@ -1119,6 +1145,10 @@ export const App: React.FC = () => {
     setAssets((prev) => [...newAssets, ...prev]);
   };
 
+  if (currentRoute === 'admin') {
+    return <AdminPortal onNavigateToEditor={navigateToEditor} />;
+  }
+
   const selectedClip = getSelectedClip();
 
   return (
@@ -1130,7 +1160,6 @@ export const App: React.FC = () => {
         onRedo={handleRedo}
         canUndo={undoStackRef.current.length > 0}
         canRedo={redoStackRef.current.length > 0}
-        onOpenAdminDashboard={() => setIsAdminDashboardOpen(true)}
         onExportVideo={() => setIsExportOpen(true)}
         onOpenBatchQueue={() => setIsBatchQueueOpen(true)}
         onOpenCompressor={() => setIsCompressorOpen(true)}
@@ -1272,11 +1301,6 @@ export const App: React.FC = () => {
       <ShortcutsModal
         isOpen={isShortcutsOpen}
         onClose={() => setIsShortcutsOpen(false)}
-      />
-
-      <AdminDashboardModal
-        isOpen={isAdminDashboardOpen}
-        onClose={() => setIsAdminDashboardOpen(false)}
       />
     </div>
   );

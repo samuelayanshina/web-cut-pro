@@ -18,6 +18,7 @@ import { ObjectTrackerEngine } from './ObjectTrackerEngine';
  */
 export class Compositor {
   private videoCache: Map<string, HTMLVideoElement> = new Map();
+  private posterCache: Map<string, HTMLImageElement> = new Map();
 
   getVideoElement(url: string): HTMLVideoElement {
     if (this.videoCache.has(url)) {
@@ -31,6 +32,17 @@ export class Compositor {
     video.preload = 'auto';
     this.videoCache.set(url, video);
     return video;
+  }
+
+  getPosterImage(url: string): HTMLImageElement {
+    if (this.posterCache.has(url)) {
+      return this.posterCache.get(url)!;
+    }
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = url;
+    this.posterCache.set(url, img);
+    return img;
   }
 
   renderFrame(
@@ -273,13 +285,17 @@ export class Compositor {
           createImageBitmap(video).then((bitmap) => {
             hardwareFrameCache.storeFrame(effectiveClip.assetId, targetSourceTime, bitmap, 30);
           }).catch(() => {});
+        } else if (asset?.thumbnailUrl) {
+          const poster = this.getPosterImage(asset.thumbnailUrl);
+          if (poster.complete && poster.naturalWidth > 0) {
+            ctx.drawImage(poster, -width / 2, -height / 2, width, height);
+          } else {
+            ctx.fillStyle = '#141416';
+            ctx.fillRect(-width / 2, -height / 2, width, height);
+          }
         } else {
-          ctx.fillStyle = '#1e293b';
+          ctx.fillStyle = '#141416';
           ctx.fillRect(-width / 2, -height / 2, width, height);
-          ctx.fillStyle = '#64748b';
-          ctx.font = '24px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.fillText(`Loading ${effectiveClip.name}...`, 0, 0);
         }
       }
 

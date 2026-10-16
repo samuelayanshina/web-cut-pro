@@ -78,6 +78,13 @@ export const Timeline: React.FC<TimelineProps> = ({
     initialX: number;
     initialDuration: number;
   } | null>(null);
+  const [showCoachTip, setShowCoachTip] = useState<boolean>(() => {
+    try {
+      return !localStorage.getItem('webcutpro_dismissed_tip_v1');
+    } catch {
+      return true;
+    }
+  });
 
   const spine = project.spine;
   const timelineWidth = Math.max(1200, (totalDuration + 5) * pixelsPerSecond);
@@ -271,6 +278,26 @@ export const Timeline: React.FC<TimelineProps> = ({
             </button>
           </div>
 
+          {/* Center: Friendly 1-Line Coach Tip Pill */}
+          {showCoachTip && (
+            <div className="hidden lg:flex items-center gap-2 px-3 py-0.5 bg-[#202022] border border-[#323236] rounded-full text-[11px] text-[#c7c7cc] shadow-sm animate-in fade-in">
+              <span className="text-[#0a84ff]">💡</span>
+              <span><strong>Tip:</strong> Press <strong>Space</strong> to Play • <strong>⌘B</strong> to Cut • <strong>Delete</strong> to Remove</span>
+              <button
+                onClick={() => {
+                  setShowCoachTip(false);
+                  try {
+                    localStorage.setItem('webcutpro_dismissed_tip_v1', 'true');
+                  } catch {}
+                }}
+                className="text-[#636366] hover:text-white ml-1 text-xs"
+                title="Dismiss Tip"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
           {/* Right Controls */}
           <div className="flex items-center gap-2">
             <button
@@ -406,7 +433,16 @@ export const Timeline: React.FC<TimelineProps> = ({
 
               {/* Primary Storyline (Spine) */}
               <div className="h-20 bg-[#111111]/80 rounded-md border border-gray-800 p-1 flex items-center relative shadow-inner">
-                {spine.map((clip) => {
+                {spine.length === 0 ? (
+                  <div className="w-full h-full flex items-center justify-center border border-dashed border-[#38383a] rounded bg-[#18181a]/50 text-center px-4">
+                    <div className="flex items-center gap-2 text-[#8e8e93]">
+                      <Plus size={15} className="text-[#0a84ff]" />
+                      <span className="text-xs text-[#d1d1d6] font-medium">Timeline is ready for your story</span>
+                      <span className="text-[11px] text-[#636366] hidden sm:inline">&mdash; Drag clips from the browser on the left</span>
+                    </div>
+                  </div>
+                ) : (
+                  spine.map((clip) => {
                   const isSelected = selectedClipId === clip.id;
                   const isGap = clip.type === 'gap';
                   const isCompound = clip.type === 'compound';
@@ -511,7 +547,8 @@ export const Timeline: React.FC<TimelineProps> = ({
                       />
                     </div>
                   );
-                })}
+                })
+              )}
               </div>
 
               {/* Connected Audio Storyline */}

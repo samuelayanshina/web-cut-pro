@@ -35,7 +35,7 @@ export const MediaBrowser: React.FC<MediaBrowserProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'media' | 'titles' | 'generators'>('media');
   const [selectedSmartFilter, setSelectedSmartFilter] = useState<FCPSmartCollection['filterType']>('all_video');
-  const [showLibrarySidebar, setShowLibrarySidebar] = useState<boolean>(true);
+  const [showLibrarySidebar, setShowLibrarySidebar] = useState<boolean>(false);
 
   const filteredAssets = LibraryHierarchyEngine.filterAssetsBySmartCollection(assets, selectedSmartFilter);
 

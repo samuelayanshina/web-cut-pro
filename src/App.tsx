@@ -748,6 +748,19 @@ export const App: React.FC = () => {
     analyticsEngine.track('BLADE_CUT', 'Inserted 3.0s Gap clip on storyline (⌥W)');
   };
 
+  const handleStartBlankProject = () => {
+    pushUndoState(project);
+    setProject((prev) => ({
+      ...prev,
+      name: 'My New Project',
+      spine: [],
+    }));
+    setCurrentTime(0);
+    setSelectedClipId(null);
+    setIsPlaying(false);
+    analyticsEngine.track('IMPORT_MEDIA', 'User started a clean blank project');
+  };
+
   const handleToggleRoleMute = (role: AudioRole) => {
     setProject((prev) => {
       const isMuted = !prev.activeRoleMutes[role];
@@ -1192,6 +1205,8 @@ export const App: React.FC = () => {
         setProject((prev) => ({ ...prev, useProxyMedia: !prev.useProxyMedia }))
       }
       onSwitchMulticamAngle={handleSwitchMulticamAngle}
+      onStartBlankProject={handleStartBlankProject}
+      onOpenTutorialGuide={() => setIsTutorialGuideOpen(true)}
     />
   );
 

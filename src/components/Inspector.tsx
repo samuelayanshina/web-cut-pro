@@ -48,6 +48,7 @@ export const Inspector: React.FC<InspectorProps> = ({
   const [activeTab, setActiveTab] = useState<'video' | 'color' | 'audio' | 'dsp' | 'text' | 'auditions' | 'optics' | 'fcp12'>('video');
   const [colorMode, setColorMode] = useState<'wheels' | 'board' | 'lut'>('wheels');
   const [isEnhancing, setIsEnhancing] = useState(false);
+  const [showAdvancedVideo, setShowAdvancedVideo] = useState(false);
 
   if (!selectedClip) {
     return (
@@ -291,113 +292,155 @@ export const Inspector: React.FC<InspectorProps> = ({
 
       {/* Inspector Body */}
       <div className="flex-1 overflow-y-auto p-3 space-y-4">
-        {/* VIDEO TAB (AI Smart Conform & Retiming) */}
+        {/* VIDEO TAB (Transform, Scale, Opacity & Advanced) */}
         {activeTab === 'video' && (
           <div className="space-y-3">
-            {/* Auto-Reframe Focus */}
-            <div className="p-3 bg-[#1c1c1e] rounded-lg border border-[#2c2c2e] space-y-2">
-              <div className="flex items-center justify-between font-medium text-[#f5f5f7] text-xs">
-                <div className="flex items-center gap-1.5">
-                  <Smartphone size={13} className="text-[#8e8e93]" />
-                  <span>Auto Reframe</span>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={selectedClip.smartConform?.enabled || false}
-                  onChange={(e) => updateSmartConform({ enabled: e.target.checked })}
-                  className="accent-[#0071e3] rounded cursor-pointer"
-                />
+            {/* Basic Transform: Scale, Position, Opacity */}
+            <div className="p-3 bg-[#1c1c1e] rounded-lg border border-[#2c2c2e] space-y-3">
+              <div className="font-semibold text-[#f5f5f7] text-xs pb-1 border-b border-[#2c2c2e]">
+                Transform
               </div>
 
-              {selectedClip.smartConform?.enabled && (
-                <div className="pt-1">
-                  <div className="flex justify-between text-[11px] text-[#8e8e93] mb-1">
-                    <span>Focal Pan X</span>
-                    <span className="font-mono text-[#d1d1d6]">{selectedClip.smartConform.trackingFocusX}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="-50"
-                    max="50"
-                    value={selectedClip.smartConform.trackingFocusX}
-                    onChange={(e) => updateSmartConform({ trackingFocusX: Number(e.target.value) })}
-                    className="w-full accent-[#0071e3] h-1 bg-[#38383a] rounded cursor-pointer"
-                  />
+              {/* Scale Slider */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-[11px] text-[#8e8e93]">
+                  <span>Scale</span>
+                  <span className="font-mono text-[#d1d1d6]">{Math.round((selectedClip.transform?.scale || 1.0) * 100)}%</span>
                 </div>
-              )}
-            </div>
-
-            {/* Retiming & Variable Speed */}
-            <div className="p-3 bg-[#1c1c1e] rounded-lg border border-[#2c2c2e] space-y-2">
-              <div className="flex items-center justify-between font-medium text-[#f5f5f7] text-xs">
-                <div className="flex items-center gap-1.5">
-                  <FastForward size={13} className="text-[#8e8e93]" />
-                  <span>Retiming & Speed</span>
-                </div>
-                <span className="font-mono text-[#d1d1d6] text-xs">
-                  {selectedClip.retiming?.speed ? `${selectedClip.retiming.speed}x` : '1.0x'}
-                </span>
-              </div>
-
-              <div>
                 <input
                   type="range"
-                  min="0.25"
-                  max="4.0"
-                  step="0.25"
-                  value={selectedClip.retiming?.speed || 1.0}
-                  onChange={(e) => updateRetiming({ speed: Number(e.target.value) })}
+                  min="0.2"
+                  max="2.5"
+                  step="0.05"
+                  value={selectedClip.transform?.scale || 1.0}
+                  onChange={(e) => updateTransform({ scale: Number(e.target.value) })}
                   className="w-full accent-[#0071e3] h-1 bg-[#38383a] rounded cursor-pointer"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                <label className="flex items-center gap-1.5 cursor-pointer">
+              {/* Position X & Y */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <div className="flex justify-between text-[10px] text-[#8e8e93]">
+                    <span>Pos X</span>
+                    <span className="font-mono text-[#d1d1d6]">{Math.round(selectedClip.transform?.posX || 0)}px</span>
+                  </div>
                   <input
-                    type="checkbox"
-                    checked={selectedClip.retiming?.reverse || false}
-                    onChange={(e) => updateRetiming({ reverse: e.target.checked })}
-                    className="accent-fcp-accent"
+                    type="range"
+                    min="-200"
+                    max="200"
+                    step="5"
+                    value={selectedClip.transform?.posX || 0}
+                    onChange={(e) => updateTransform({ posX: Number(e.target.value) })}
+                    className="w-full accent-[#0071e3] h-1 bg-[#38383a] rounded cursor-pointer"
                   />
-                  <span className="text-[10px] text-gray-300">Reverse</span>
-                </label>
-                <label className="flex items-center gap-1.5 cursor-pointer">
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex justify-between text-[10px] text-[#8e8e93]">
+                    <span>Pos Y</span>
+                    <span className="font-mono text-[#d1d1d6]">{Math.round(selectedClip.transform?.posY || 0)}px</span>
+                  </div>
                   <input
-                    type="checkbox"
-                    checked={selectedClip.retiming?.opticalFlow || false}
-                    onChange={(e) => updateRetiming({ opticalFlow: e.target.checked })}
-                    className="accent-fcp-accent"
+                    type="range"
+                    min="-200"
+                    max="200"
+                    step="5"
+                    value={selectedClip.transform?.posY || 0}
+                    onChange={(e) => updateTransform({ posY: Number(e.target.value) })}
+                    className="w-full accent-[#0071e3] h-1 bg-[#38383a] rounded cursor-pointer"
                   />
-                  <span className="text-[10px] text-gray-300">Optical Flow</span>
-                </label>
+                </div>
+              </div>
+
+              {/* Opacity */}
+              <div className="space-y-1 pt-1 border-t border-[#2c2c2e]">
+                <div className="flex justify-between text-[11px] text-[#8e8e93]">
+                  <span>Opacity</span>
+                  <span className="font-mono text-[#d1d1d6]">{Math.round((selectedClip.opacity ?? 1.0) * 100)}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="1.0"
+                  step="0.05"
+                  value={selectedClip.opacity ?? 1.0}
+                  onChange={(e) => onUpdateClip({ ...selectedClip, opacity: Number(e.target.value) })}
+                  className="w-full accent-[#0071e3] h-1 bg-[#38383a] rounded cursor-pointer"
+                />
               </div>
             </div>
 
-            {/* 14 Blend Modes */}
-            <div className="p-2.5 bg-[#181818] rounded-md border border-gray-800 space-y-2">
-              <div className="text-[11px] font-bold text-gray-300 uppercase">Compositing (14 Blend Modes)</div>
-              <select
-                value={selectedClip.blendMode}
-                onChange={(e) => onUpdateClip({ ...selectedClip, blendMode: e.target.value as BlendMode })}
-                className="w-full bg-[#141414] border border-gray-700 rounded px-2 py-1 text-gray-200 text-xs"
+            {/* Collapsible Advanced Settings (Reframe, Retiming, Blend Modes) */}
+            <div className="p-2.5 bg-[#18181a] rounded-lg border border-[#2c2c2e]">
+              <button
+                type="button"
+                onClick={() => setShowAdvancedVideo(!showAdvancedVideo)}
+                className="w-full flex items-center justify-between text-xs text-[#8e8e93] hover:text-white transition-colors"
               >
-                <option value="normal">Normal (Source Over)</option>
-                <option value="screen">Screen (Lighten)</option>
-                <option value="multiply">Multiply (Darken)</option>
-                <option value="overlay">Overlay</option>
-                <option value="lighten">Lighten</option>
-                <option value="darken">Darken</option>
-                <option value="color-dodge">Color Dodge</option>
-                <option value="color-burn">Color Burn</option>
-                <option value="hard-light">Hard Light</option>
-                <option value="soft-light">Soft Light</option>
-                <option value="difference">Difference</option>
-                <option value="exclusion">Exclusion</option>
-                <option value="hue">Hue</option>
-                <option value="saturation">Saturation</option>
-                <option value="color">Color</option>
-                <option value="luminosity">Luminosity</option>
-              </select>
+                <span className="font-medium">Advanced Compositing & Speed</span>
+                <span className="font-mono text-[10px]">{showAdvancedVideo ? '▾ Less' : '▸ More'}</span>
+              </button>
+
+              {showAdvancedVideo && (
+                <div className="pt-3 space-y-3 border-t border-[#2c2c2e] mt-2">
+                  {/* Auto-Reframe Focus */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs text-[#f5f5f7]">
+                      <div className="flex items-center gap-1.5">
+                        <Smartphone size={13} className="text-[#8e8e93]" />
+                        <span>Auto Reframe</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={selectedClip.smartConform?.enabled || false}
+                        onChange={(e) => updateSmartConform({ enabled: e.target.checked })}
+                        className="accent-[#0071e3] rounded cursor-pointer"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Retiming & Variable Speed */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs text-[#f5f5f7]">
+                      <div className="flex items-center gap-1.5">
+                        <FastForward size={13} className="text-[#8e8e93]" />
+                        <span>Retiming</span>
+                      </div>
+                      <span className="font-mono text-[#d1d1d6] text-xs">
+                        {selectedClip.retiming?.speed ? `${selectedClip.retiming.speed}x` : '1.0x'}
+                      </span>
+                    </div>
+
+                    <input
+                      type="range"
+                      min="0.25"
+                      max="4.0"
+                      step="0.25"
+                      value={selectedClip.retiming?.speed || 1.0}
+                      onChange={(e) => updateRetiming({ speed: Number(e.target.value) })}
+                      className="w-full accent-[#0071e3] h-1 bg-[#38383a] rounded cursor-pointer"
+                    />
+                  </div>
+
+                  {/* 14 Blend Modes */}
+                  <div className="space-y-1">
+                    <div className="text-[10px] text-[#8e8e93] uppercase font-semibold">Blend Mode</div>
+                    <select
+                      value={selectedClip.blendMode}
+                      onChange={(e) => onUpdateClip({ ...selectedClip, blendMode: e.target.value as BlendMode })}
+                      className="w-full bg-[#121214] border border-[#2c2c2e] rounded px-2 py-1 text-[#d1d1d6] text-xs"
+                    >
+                      <option value="normal">Normal (Source Over)</option>
+                      <option value="screen">Screen (Lighten)</option>
+                      <option value="multiply">Multiply (Darken)</option>
+                      <option value="overlay">Overlay</option>
+                      <option value="lighten">Lighten</option>
+                      <option value="darken">Darken</option>
+                    </select>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

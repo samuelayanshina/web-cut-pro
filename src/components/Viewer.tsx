@@ -15,7 +15,11 @@ import {
   HardDrive,
   Camera,
   Glasses,
-  Sparkles
+  Sparkles,
+  BookOpen,
+  PlusCircle,
+  X,
+  HelpCircle
 } from 'lucide-react';
 import { FCPProject, MediaAsset, ScopeMode } from '../types/fcp';
 import { compositor } from '../engine/Compositor';
@@ -37,6 +41,8 @@ interface ViewerProps {
   onStepFrame: (deltaFrames: number) => void;
   onToggleProxyMedia: () => void;
   onSwitchMulticamAngle: (angleIndex: number) => void;
+  onStartBlankProject?: () => void;
+  onOpenTutorialGuide?: () => void;
 }
 
 export const Viewer: React.FC<ViewerProps> = ({
@@ -51,6 +57,8 @@ export const Viewer: React.FC<ViewerProps> = ({
   onStepFrame,
   onToggleProxyMedia,
   onSwitchMulticamAngle,
+  onStartBlankProject,
+  onOpenTutorialGuide,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -59,6 +67,13 @@ export const Viewer: React.FC<ViewerProps> = ({
   const [isMulticamOpen, setIsMulticamOpen] = useState(false);
   const [isLooping, setIsLooping] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [showWelcomeCard, setShowWelcomeCard] = useState<boolean>(() => {
+    try {
+      return !localStorage.getItem('webcutpro_dismissed_welcome_v1');
+    } catch {
+      return true;
+    }
+  });
 
   // Render canvas frame on currentTime update
   useEffect(() => {
@@ -148,6 +163,94 @@ export const Viewer: React.FC<ViewerProps> = ({
               </span>
             )}
           </div>
+
+          {/* Clean Welcoming First-Run Card (Zero Splash Screen) */}
+          {showWelcomeCard && !isPlaying && (
+            <div className="absolute inset-0 z-20 flex items-center justify-center p-4 bg-black/60 backdrop-blur-[4px]">
+              <div className="max-w-sm w-full bg-[#1c1c1e] border border-[#38383a] rounded-2xl p-5 shadow-2xl text-center space-y-3.5 animate-in fade-in zoom-in-95 duration-200">
+                <div className="flex items-center justify-between pb-2 border-b border-[#2c2c2e]">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-md bg-[#0071e3] flex items-center justify-center text-white shadow-sm">
+                      <Play size={12} className="fill-white ml-0.5" />
+                    </div>
+                    <span className="font-semibold text-white tracking-tight text-xs">
+                      Welcome to Web Cut Pro
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowWelcomeCard(false);
+                      try {
+                        localStorage.setItem('webcutpro_dismissed_welcome_v1', 'true');
+                      } catch {}
+                    }}
+                    className="p-1 text-[#8e8e93] hover:text-white hover:bg-[#2c2c2e] rounded-lg transition-colors"
+                    title="Dismiss"
+                  >
+                    <X size={15} />
+                  </button>
+                </div>
+
+                <p className="text-[11px] text-[#a1a1a6] text-left leading-relaxed">
+                  Final Cut Pro workflow in your browser. Choose how to start:
+                </p>
+
+                <div className="space-y-2 pt-1">
+                  {/* Action 1: Play Demo */}
+                  <button
+                    onClick={() => {
+                      setShowWelcomeCard(false);
+                      try {
+                        localStorage.setItem('webcutpro_dismissed_welcome_v1', 'true');
+                      } catch {}
+                      if (!isPlaying) onTogglePlay();
+                    }}
+                    className="w-full py-2.5 px-3.5 bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-xl text-xs font-medium flex items-center justify-between shadow-sm transition-all"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Play size={13} className="fill-white" />
+                      <span>Play Sample Video</span>
+                    </div>
+                    <span className="text-[10px] text-white/80 font-mono">Space</span>
+                  </button>
+
+                  {/* Action 2: Blank Canvas for My Video */}
+                  {onStartBlankProject && (
+                    <button
+                      onClick={() => {
+                        setShowWelcomeCard(false);
+                        try {
+                          localStorage.setItem('webcutpro_dismissed_welcome_v1', 'true');
+                        } catch {}
+                        onStartBlankProject();
+                      }}
+                      className="w-full py-2.5 px-3.5 bg-[#242426] hover:bg-[#2c2c2e] border border-[#38383a] text-[#f5f5f7] hover:text-white rounded-xl text-xs font-medium flex items-center justify-between transition-all"
+                    >
+                      <div className="flex items-center gap-2">
+                        <PlusCircle size={13} className="text-[#30d158]" />
+                        <span>Start Blank (Edit My Video)</span>
+                      </div>
+                      <span className="text-[10px] text-[#8e8e93]">Clean Slate</span>
+                    </button>
+                  )}
+
+                  {/* Action 3: Tutorial Guide */}
+                  {onOpenTutorialGuide && (
+                    <button
+                      onClick={() => {
+                        setShowWelcomeCard(false);
+                        onOpenTutorialGuide();
+                      }}
+                      className="w-full py-2 px-3 bg-transparent hover:bg-[#242426] text-[#8e8e93] hover:text-white rounded-xl text-xs font-normal flex items-center justify-center gap-1.5 transition-all"
+                    >
+                      <BookOpen size={13} className="text-[#0a84ff]" />
+                      <span>Open Final Cut Tutorial Guide</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Audio Meters */}
@@ -325,6 +428,14 @@ export const Viewer: React.FC<ViewerProps> = ({
               {Timecode.formatSMPTE(totalDuration, project.format.frameRate)}
             </span>
           </div>
+
+          <button
+            onClick={() => setShowWelcomeCard(true)}
+            className="p-1.5 text-[#8e8e93] hover:text-white hover:bg-[#242426] rounded-md transition-colors"
+            title="Welcome & Quick Start"
+          >
+            <HelpCircle size={14} />
+          </button>
 
           <button
             onClick={handleFullscreen}

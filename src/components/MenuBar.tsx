@@ -17,7 +17,8 @@ import {
   MoreHorizontal,
   Download,
   Upload,
-  BookOpen
+  BookOpen,
+  Plus
 } from 'lucide-react';
 import { Timecode } from '../engine/Timecode';
 import { FCPProject } from '../types/fcp';
@@ -37,6 +38,8 @@ interface MenuBarProps {
   onImportFcpXml: (file: File) => void;
   onOpenShortcuts: () => void;
   onOpenTutorialGuide?: () => void;
+  onLoadDemoProject?: () => void;
+  onNewBlankProject?: () => void;
   onResetDemo: () => void;
   onOpenSmartConform: () => void;
   onRunSceneDetection: () => void;
@@ -58,6 +61,8 @@ export const MenuBar: React.FC<MenuBarProps> = ({
   onImportFcpXml,
   onOpenShortcuts,
   onOpenTutorialGuide,
+  onLoadDemoProject,
+  onNewBlankProject,
   onResetDemo,
   onOpenSmartConform,
   onRunSceneDetection,
@@ -140,6 +145,25 @@ export const MenuBar: React.FC<MenuBarProps> = ({
             <BookOpen size={13} className="text-[#0a84ff]" />
             <span>Tutorial Guide</span>
           </button>
+
+          {project.spine.length === 0 ? (
+            <button
+              onClick={onLoadDemoProject}
+              className="flex items-center gap-1.5 px-2.5 py-1 bg-[#242426] hover:bg-[#2c2c2e] border border-[#38383a] rounded-md text-[#d1d1d6] hover:text-white text-xs font-normal transition-colors"
+              title="Load Sample Demo Project to Explore"
+            >
+              <Play size={11} className="text-[#0a84ff] fill-[#0a84ff]" />
+              <span>Try Demo</span>
+            </button>
+          ) : (
+            <button
+              onClick={onNewBlankProject}
+              className="flex items-center gap-1.5 px-2.5 py-1 bg-[#242426] hover:bg-[#2c2c2e] border border-[#38383a] rounded-md text-[#d1d1d6] hover:text-white text-xs font-normal transition-colors"
+              title="Start a Clean Blank Project"
+            >
+              <span>+ New Project</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -235,6 +259,30 @@ export const MenuBar: React.FC<MenuBarProps> = ({
               >
                 <Download size={13} className="text-[#8e8e93]" />
                 <span>Export FCPXML...</span>
+              </button>
+
+              <div className="h-[1px] bg-[#2c2c2e] my-1" />
+
+              <button
+                onClick={() => {
+                  onNewBlankProject?.();
+                  setShowMoreMenu(false);
+                }}
+                className="w-full px-2.5 py-1.5 flex items-center gap-2 text-[#d1d1d6] hover:text-white hover:bg-[#2c2c2e] rounded-lg transition-colors text-left"
+              >
+                <Plus size={13} className="text-[#30d158]" />
+                <span>New Blank Project</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  onLoadDemoProject?.();
+                  setShowMoreMenu(false);
+                }}
+                className="w-full px-2.5 py-1.5 flex items-center gap-2 text-[#d1d1d6] hover:text-white hover:bg-[#2c2c2e] rounded-lg transition-colors text-left"
+              >
+                <Play size={13} className="text-[#0a84ff] fill-[#0a84ff]" />
+                <span>Load Sample Demo Project</span>
               </button>
 
               <div className="h-[1px] bg-[#2c2c2e] my-1" />

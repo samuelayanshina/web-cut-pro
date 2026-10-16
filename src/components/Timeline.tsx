@@ -17,7 +17,8 @@ import {
   Split,
   Radio,
   Layers,
-  Bookmark
+  Bookmark,
+  Play
 } from 'lucide-react';
 import { TimelineClip, ToolType, FCPProject, MediaAsset, AudioRole } from '../types/fcp';
 import { Timecode } from '../engine/Timecode';
@@ -43,6 +44,7 @@ interface TimelineProps {
   onInsertGap: () => void;
   onToggleRoleMute: (role: AudioRole) => void;
   onToggleMarkerComplete: (markerId: string) => void;
+  onLoadDemoProject?: () => void;
 }
 
 export const Timeline: React.FC<TimelineProps> = ({
@@ -64,6 +66,7 @@ export const Timeline: React.FC<TimelineProps> = ({
   onInsertGap,
   onToggleRoleMute,
   onToggleMarkerComplete,
+  onLoadDemoProject,
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const trackAreaRef = useRef<HTMLDivElement | null>(null);
@@ -434,12 +437,27 @@ export const Timeline: React.FC<TimelineProps> = ({
               {/* Primary Storyline (Spine) */}
               <div className="h-20 bg-[#111111]/80 rounded-md border border-gray-800 p-1 flex items-center relative shadow-inner">
                 {spine.length === 0 ? (
-                  <div className="w-full h-full flex items-center justify-center border border-dashed border-[#38383a] rounded bg-[#18181a]/50 text-center px-4">
-                    <div className="flex items-center gap-2 text-[#8e8e93]">
-                      <Plus size={15} className="text-[#0a84ff]" />
-                      <span className="text-xs text-[#d1d1d6] font-medium">Timeline is ready for your story</span>
-                      <span className="text-[11px] text-[#636366] hidden sm:inline">&mdash; Drag clips from the browser on the left</span>
+                  <div className="w-full h-full flex items-center justify-between border border-dashed border-[#38383a] rounded bg-[#18181a]/50 text-center px-4 sm:px-6">
+                    <div className="flex items-center gap-3 text-[#8e8e93]">
+                      <div className="w-8 h-8 rounded-lg bg-[#242426] border border-[#38383a] flex items-center justify-center text-[#0a84ff] shrink-0">
+                        <Plus size={16} />
+                      </div>
+                      <div className="text-left">
+                        <div className="text-xs text-[#f5f5f7] font-medium">Timeline is Empty</div>
+                        <div className="text-[11px] text-[#8e8e93]">Drag clips from the library above, or drop video files here to start editing</div>
+                      </div>
                     </div>
+
+                    {onLoadDemoProject && (
+                      <button
+                        onClick={onLoadDemoProject}
+                        className="px-3 py-1.5 bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-lg text-xs font-medium flex items-center gap-1.5 shadow-sm transition-all shrink-0"
+                        title="Load Sample Project to Test"
+                      >
+                        <Play size={12} className="fill-white" />
+                        <span>Try Sample Project</span>
+                      </button>
+                    )}
                   </div>
                 ) : (
                   spine.map((clip) => {

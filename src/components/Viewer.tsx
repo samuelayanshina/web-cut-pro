@@ -19,7 +19,8 @@ import {
   BookOpen,
   PlusCircle,
   X,
-  HelpCircle
+  HelpCircle,
+  Video
 } from 'lucide-react';
 import { FCPProject, MediaAsset, ScopeMode } from '../types/fcp';
 import { compositor } from '../engine/Compositor';
@@ -42,6 +43,7 @@ interface ViewerProps {
   onToggleProxyMedia: () => void;
   onSwitchMulticamAngle: (angleIndex: number) => void;
   onStartBlankProject?: () => void;
+  onLoadDemoProject?: () => void;
   onOpenTutorialGuide?: () => void;
 }
 
@@ -58,6 +60,7 @@ export const Viewer: React.FC<ViewerProps> = ({
   onToggleProxyMedia,
   onSwitchMulticamAngle,
   onStartBlankProject,
+  onLoadDemoProject,
   onOpenTutorialGuide,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -164,8 +167,43 @@ export const Viewer: React.FC<ViewerProps> = ({
             )}
           </div>
 
-          {/* Clean Welcoming First-Run Card (Zero Splash Screen) */}
-          {showWelcomeCard && !isPlaying && (
+          {/* Empty Timeline State */}
+          {project.spine.length === 0 && (
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[#111113] p-6 text-center space-y-3 select-none">
+              <div className="w-12 h-12 rounded-2xl bg-[#1c1c1e] border border-[#2c2c2e] flex items-center justify-center text-[#8e8e93] shadow-md">
+                <Video size={22} className="text-[#a1a1a6]" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-sm font-semibold text-white">No Clips on Timeline</h3>
+                <p className="text-xs text-[#8e8e93] max-w-xs">
+                  Drag videos down from the library, or try the sample project to see how it works.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 pt-1">
+                {onLoadDemoProject && (
+                  <button
+                    onClick={onLoadDemoProject}
+                    className="px-3.5 py-2 bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-xl text-xs font-medium flex items-center gap-1.5 shadow-sm transition-all"
+                  >
+                    <Play size={13} className="fill-white" />
+                    <span>Try Sample Project</span>
+                  </button>
+                )}
+                {onOpenTutorialGuide && (
+                  <button
+                    onClick={onOpenTutorialGuide}
+                    className="px-3.5 py-2 bg-[#242426] hover:bg-[#2c2c2e] border border-[#38383a] text-[#d1d1d6] hover:text-white rounded-xl text-xs font-normal flex items-center gap-1.5 transition-all"
+                  >
+                    <BookOpen size={13} className="text-[#0a84ff]" />
+                    <span>Tutorial Guide</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Clean Welcoming First-Run Card (When Project Has Clips) */}
+          {project.spine.length > 0 && showWelcomeCard && !isPlaying && (
             <div className="absolute inset-0 z-20 flex items-center justify-center p-4 bg-black/60 backdrop-blur-[4px]">
               <div className="max-w-sm w-full bg-[#1c1c1e] border border-[#38383a] rounded-2xl p-5 shadow-2xl text-center space-y-3.5 animate-in fade-in zoom-in-95 duration-200">
                 <div className="flex items-center justify-between pb-2 border-b border-[#2c2c2e]">

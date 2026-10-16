@@ -65,7 +65,28 @@ const initialDsp = {
   limiterCeiling: 0,
 };
 
-const createInitialProject = (): FCPProject => {
+const createInitialProject = (): FCPProject => ({
+  id: 'fcp-project-1',
+  name: 'Untitled Project',
+  format: {
+    name: '1080p Cinema',
+    width: 1920,
+    height: 1080,
+    aspectRatio: '16:9',
+    frameRate: 30,
+    colorSpace: 'Rec. 709',
+  },
+  spine: [],
+  markers: [],
+  useProxyMedia: false,
+  activeRoleMutes: {
+    dialogue: false,
+    music: false,
+    effects: false,
+  },
+});
+
+const createSampleDemoProject = (): FCPProject => {
   const spineClips: TimelineClip[] = [
     {
       id: 'clip-drone-1',
@@ -377,8 +398,8 @@ const createInitialProject = (): FCPProject => {
   };
 };
 
-const LOCAL_STORAGE_PROJECT_KEY = 'web_cut_pro_project_v2';
-const LOCAL_STORAGE_ASSETS_KEY = 'web_cut_pro_assets_v2';
+const LOCAL_STORAGE_PROJECT_KEY = 'web_cut_pro_project_v3';
+const LOCAL_STORAGE_ASSETS_KEY = 'web_cut_pro_assets_v3';
 
 const loadPersistedProject = (): FCPProject => {
   try {
@@ -417,7 +438,7 @@ export const App: React.FC = () => {
   const [assets, setAssets] = useState<MediaAsset[]>(loadPersistedAssets);
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [selectedClipId, setSelectedClipId] = useState<string | null>('clip-drone-1');
+  const [selectedClipId, setSelectedClipId] = useState<string | null>(null);
   const [activeTool, setActiveTool] = useState<ToolType>('select');
   const [snappingEnabled, setSnappingEnabled] = useState<boolean>(true);
   const [skimmerEnabled, setSkimmerEnabled] = useState<boolean>(true);
@@ -759,6 +780,17 @@ export const App: React.FC = () => {
     setSelectedClipId(null);
     setIsPlaying(false);
     analyticsEngine.track('IMPORT_MEDIA', 'User started a clean blank project');
+  };
+
+  const handleLoadSampleProject = () => {
+    pushUndoState(project);
+    const demo = createSampleDemoProject();
+    setProject(demo);
+    setAssets(SAMPLE_ASSETS);
+    setCurrentTime(0);
+    setSelectedClipId('clip-drone-1');
+    setIsPlaying(false);
+    analyticsEngine.track('IMPORT_MEDIA', 'User loaded sample demo project');
   };
 
   const handleToggleRoleMute = (role: AudioRole) => {
@@ -1206,6 +1238,7 @@ export const App: React.FC = () => {
       }
       onSwitchMulticamAngle={handleSwitchMulticamAngle}
       onStartBlankProject={handleStartBlankProject}
+      onLoadDemoProject={handleLoadSampleProject}
       onOpenTutorialGuide={() => setIsTutorialGuideOpen(true)}
     />
   );
@@ -1253,6 +1286,7 @@ export const App: React.FC = () => {
       onInsertGap={handleInsertGap}
       onToggleRoleMute={handleToggleRoleMute}
       onToggleMarkerComplete={handleToggleMarkerComplete}
+      onLoadDemoProject={handleLoadSampleProject}
     />
   );
 
@@ -1273,6 +1307,8 @@ export const App: React.FC = () => {
         onImportFcpXml={handleImportFcpXml}
         onOpenShortcuts={() => setIsShortcutsOpen(true)}
         onOpenTutorialGuide={() => setIsTutorialGuideOpen(true)}
+        onLoadDemoProject={handleLoadSampleProject}
+        onNewBlankProject={handleStartBlankProject}
         onResetDemo={() => {
           try {
             localStorage.removeItem(LOCAL_STORAGE_PROJECT_KEY);
@@ -1281,7 +1317,7 @@ export const App: React.FC = () => {
           setProject(createInitialProject());
           setAssets(SAMPLE_ASSETS);
           setCurrentTime(0);
-          setSelectedClipId('clip-drone-1');
+          setSelectedClipId(null);
         }}
         onOpenSmartConform={() => setIsSmartConformOpen(true)}
         onRunSceneDetection={handleRunSceneDetection}

@@ -12,6 +12,7 @@ import { ShortcutsModal } from './components/ShortcutsModal';
 import { SmartConformModal } from './components/SmartConformModal';
 import { audioEngine } from './engine/AudioEngine';
 import { audioDspEngine } from './engine/AudioDspEngine';
+import { compositor } from './engine/Compositor';
 import { OPFSStorageEngine } from './engine/OPFSStorageEngine';
 import { ProxyEngine } from './engine/ProxyEngine';
 import { SceneCutDetector } from './engine/SceneCutDetector';
@@ -496,6 +497,23 @@ export const App: React.FC = () => {
         );
       }
     });
+
+    // Rehydrate custom assets from OPFS storage if session blob URLs expired
+    assets.forEach(async (asset) => {
+      if (asset.opfsPath) {
+        try {
+          const file = await OPFSStorageEngine.getFile(asset.opfsPath);
+          if (file) {
+            const freshUrl = URL.createObjectURL(file);
+            setAssets((prev) =>
+              prev.map((a) => (a.id === asset.id ? { ...a, url: freshUrl } : a))
+            );
+          }
+        } catch (e) {
+          console.warn('Could not rehydrate OPFS asset:', e);
+        }
+      }
+    });
   }, []);
 
   const getSelectedClip = useCallback((): TimelineClip | null => {
@@ -573,6 +591,7 @@ export const App: React.FC = () => {
         const next = prev + deltaSec;
         if (next >= totalDuration) {
           setIsPlaying(false);
+          compositor.pauseAll();
           return 0;
         }
         return next;
@@ -588,10 +607,12 @@ export const App: React.FC = () => {
     } else {
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
       lastTimeRef.current = null;
+      compositor.pauseAll();
     }
 
     return () => {
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      compositor.pauseAll();
     };
   }, [isPlaying, totalDuration]);
 
@@ -1005,6 +1026,7 @@ export const App: React.FC = () => {
   };
 
   const handleAddAssetToSpine = (asset: MediaAsset) => {
+    const clipDuration = asset.duration || 5.0;
     const newClip: TimelineClip = {
       id: `clip-${asset.id}-${Date.now()}`,
       name: asset.name.replace(/\.[^/.]+$/, ''),
@@ -1012,9 +1034,9 @@ export const App: React.FC = () => {
       type: asset.type,
       role: asset.type === 'audio' ? 'music' : 'dialogue',
       timelineIn: 0,
-      duration: Math.min(5.0, asset.duration || 5.0),
+      duration: clipDuration,
       sourceIn: 0,
-      sourceOut: Math.min(5.0, asset.duration || 5.0),
+      sourceOut: clipDuration,
       retiming: initialRetiming,
       kenBurns: initialKenBurns,
       smartConform: initialSmartConform,
@@ -1044,6 +1066,7 @@ export const App: React.FC = () => {
 
     const { clip: parentClip, index } = target;
     const anchorOffset = Math.max(0, currentTime - parentClip.timelineIn);
+    const clipDuration = asset.duration || 4.0;
 
     const connectedClip: TimelineClip = {
       id: `conn-${asset.id}-${Date.now()}`,
@@ -1052,9 +1075,9 @@ export const App: React.FC = () => {
       type: asset.type,
       role: asset.type === 'audio' ? 'music' : 'dialogue',
       timelineIn: 0,
-      duration: Math.min(4.0, asset.duration || 4.0),
+      duration: clipDuration,
       sourceIn: 0,
-      sourceOut: Math.min(4.0, asset.duration || 4.0),
+      sourceOut: clipDuration,
       retiming: initialRetiming,
       kenBurns: initialKenBurns,
       smartConform: initialSmartConform,
@@ -1174,15 +1197,95 @@ export const App: React.FC = () => {
       const isAudio = file.type.startsWith('audio');
       const blobUrl = URL.createObjectURL(file);
 
+      // Probe actual media metadata (duration, width, height)
+      let duration = 10.0;
+      let width = 1920;
+      let height = 1080;
+
+      if (isAudio) {
+        try {
+          const audio = document.createElement('audio');
+          audio.preload = 'metadata';
+          audio.src = blobUrl;
+          await new Promise<void>((resolve) => {
+            const cleanup = () => {
+              audio.onloadedmetadata = null;
+              audio.onerror = null;
+              resolve();
+            };
+            audio.onloadedmetadata = () => {
+              if (audio.duration && !isNaN(audio.duration) && isFinite(audio.duration)) {
+                duration = audio.duration;
+              }
+              cleanup();
+            };
+            audio.onerror = cleanup;
+            setTimeout(cleanup, 2500);
+          });
+        } catch (e) {
+          console.warn('Could not read audio metadata:', e);
+        }
+      } else {
+        try {
+          const video = document.createElement('video');
+          video.preload = 'metadata';
+          video.muted = true;
+          video.playsInline = true;
+          video.src = blobUrl;
+          await new Promise<void>((resolve) => {
+            const cleanup = () => {
+              video.onloadedmetadata = null;
+              video.onerror = null;
+              resolve();
+            };
+            video.onloadedmetadata = () => {
+              if (video.duration && !isNaN(video.duration) && isFinite(video.duration)) {
+                duration = video.duration;
+              }
+              if (video.videoWidth) width = video.videoWidth;
+              if (video.videoHeight) height = video.videoHeight;
+              cleanup();
+            };
+            video.onerror = cleanup;
+            setTimeout(cleanup, 3500);
+          });
+        } catch (e) {
+          console.warn('Could not read video metadata:', e);
+        }
+      }
+
       const asset: MediaAsset = {
         id: `local-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
         name: file.name,
         type: isAudio ? 'audio' : 'video',
         url: blobUrl,
         opfsPath,
-        duration: 10.0,
+        duration,
+        width,
+        height,
         fps: 30,
       };
+
+      // If timeline is empty and first video is added, auto-conform project aspect ratio
+      if (!isAudio && project.spine.length === 0 && width > 0 && height > 0) {
+        const ratio = Math.abs(width / height - 9 / 16) < 0.05
+          ? '9:16'
+          : Math.abs(width / height - 4 / 5) < 0.05
+          ? '4:5'
+          : Math.abs(width / height - 1.0) < 0.05
+          ? '1:1'
+          : '16:9';
+        setProject((prev) => ({
+          ...prev,
+          format: {
+            ...prev.format,
+            width,
+            height,
+            aspectRatio: ratio,
+            name: `${ratio} ${ratio === '9:16' ? 'Vertical Short' : ratio === '16:9' ? 'Cinema' : 'Social'}`,
+          },
+        }));
+      }
 
       if (!isAudio) {
         ProxyEngine.generateProxy(blobUrl).then((proxyUrl) => {

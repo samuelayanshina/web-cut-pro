@@ -87,10 +87,11 @@ export const Viewer: React.FC<ViewerProps> = ({
         assets,
         currentTime,
         project.format,
-        project.useProxyMedia
+        project.useProxyMedia,
+        isPlaying
       );
     }
-  }, [currentTime, project, assets]);
+  }, [currentTime, project, assets, isPlaying]);
 
   const toggleMute = () => {
     const next = !isMuted;
@@ -131,12 +132,17 @@ export const Viewer: React.FC<ViewerProps> = ({
       />
 
       {/* Viewer Main Screen Area */}
-      <div className="flex-1 relative flex items-center justify-center p-2 min-h-0 overflow-hidden">
-        <div className="relative aspect-video max-h-full max-w-full bg-black shadow-2xl rounded overflow-hidden flex items-center justify-center border border-gray-800">
+      <div className="flex-1 relative flex items-center justify-center p-2 min-h-0 overflow-hidden w-full h-full">
+        <div
+          className="relative max-h-full max-w-full bg-black shadow-2xl rounded overflow-hidden flex items-center justify-center border border-gray-800"
+          style={{
+            aspectRatio: `${project.format.width || 1920} / ${project.format.height || 1080}`,
+          }}
+        >
           <canvas
             ref={canvasRef}
-            width={1920}
-            height={1080}
+            width={project.format.width || 1920}
+            height={project.format.height || 1080}
             className="w-full h-full object-contain"
           />
 

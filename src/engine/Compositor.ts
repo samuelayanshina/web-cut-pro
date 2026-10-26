@@ -11,6 +11,7 @@ import { hardwareFrameCache } from './HardwareFrameCache';
 import { SpatialVideoEngine } from './SpatialVideoEngine';
 import { MagneticMaskEngine } from './MagneticMaskEngine';
 import { ObjectTrackerEngine } from './ObjectTrackerEngine';
+import { SmartConformEngine } from './SmartConformEngine';
 
 /**
  * Real-time Video Compositor Engine for Web Cut Pro
@@ -45,13 +46,23 @@ export class Compositor {
     return img;
   }
 
+  pauseAll() {
+    this.videoCache.forEach((vid) => {
+      if (!vid.paused) {
+        vid.pause();
+        vid.muted = true;
+      }
+    });
+  }
+
   renderFrame(
     canvas: HTMLCanvasElement,
     spine: TimelineClip[],
     assets: MediaAsset[],
     currentTime: number,
     format: ProjectFormat,
-    useProxyMedia: boolean = false
+    useProxyMedia: boolean = false,
+    isPlaying: boolean = false
   ) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -62,6 +73,13 @@ export class Compositor {
     // Cinema black background
     ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, width, height);
+
+    if (spine.length === 0) {
+      this.pauseAll();
+      return;
+    }
+
+    const activeUrls = new Set<string>();
 
     // 1. Find active clip on primary spine
     let activeSpineClip: TimelineClip | null = null;
@@ -86,12 +104,12 @@ export class Compositor {
           (spatialCtx, offsetX) => {
             spatialCtx.save();
             spatialCtx.translate(offsetX, 0);
-            this.renderClip(spatialCtx, activeSpineClip!, assets, currentTime, width, height, undefined, useProxyMedia);
+            this.renderClip(spatialCtx, activeSpineClip!, assets, currentTime, width, height, undefined, useProxyMedia, format, isPlaying, activeUrls);
             spatialCtx.restore();
           }
         );
       } else {
-        this.renderClip(ctx, activeSpineClip, assets, currentTime, width, height, undefined, useProxyMedia);
+        this.renderClip(ctx, activeSpineClip, assets, currentTime, width, height, undefined, useProxyMedia, format, isPlaying, activeUrls);
       }
 
       // Transition out
@@ -106,7 +124,7 @@ export class Compositor {
 
         ctx.save();
         ctx.globalAlpha = Math.min(1, Math.max(0, transProgress));
-        this.renderClip(ctx, nextSpineClip, assets, nextSpineClip.timelineIn, width, height, undefined, useProxyMedia);
+        this.renderClip(ctx, nextSpineClip, assets, nextSpineClip.timelineIn, width, height, undefined, useProxyMedia, format, isPlaying, activeUrls);
         ctx.restore();
 
         if (activeSpineClip.transitionOut.type === 'glitch') {
@@ -121,7 +139,7 @@ export class Compositor {
           const swipeOffset = (1 - transProgress) * width;
           ctx.save();
           ctx.translate(swipeOffset, 0);
-          this.renderClip(ctx, nextSpineClip, assets, nextSpineClip.timelineIn, width, height, undefined, useProxyMedia);
+          this.renderClip(ctx, nextSpineClip, assets, nextSpineClip.timelineIn, width, height, undefined, useProxyMedia, format, isPlaying, activeUrls);
           ctx.restore();
         }
       }
@@ -132,11 +150,19 @@ export class Compositor {
           const connStart = activeSpineClip.timelineIn + (conn.anchorOffset || 0);
           const connEnd = connStart + conn.duration;
           if (currentTime >= connStart && currentTime < connEnd) {
-            this.renderClip(ctx, conn, assets, currentTime, width, height, connStart, useProxyMedia);
+            this.renderClip(ctx, conn, assets, currentTime, width, height, connStart, useProxyMedia, format, isPlaying, activeUrls);
           }
         }
       }
     }
+
+    // Pause any non-active video elements to free system resources & prevent ghost audio
+    this.videoCache.forEach((vid, url) => {
+      if (!activeUrls.has(url) && !vid.paused) {
+        vid.pause();
+        vid.muted = true;
+      }
+    });
   }
 
   private renderClip(
@@ -147,7 +173,10 @@ export class Compositor {
     width: number,
     height: number,
     clipStartTime?: number,
-    useProxyMedia: boolean = false
+    useProxyMedia: boolean = false,
+    format?: ProjectFormat,
+    isPlaying: boolean = false,
+    activeUrls?: Set<string>
   ) {
     if (clip.type === 'gap') return;
 
@@ -251,7 +280,7 @@ export class Compositor {
     if (effectiveClip.type === 'compound' && effectiveClip.subSpine) {
       for (const sub of effectiveClip.subSpine) {
         if (progressInClip >= sub.timelineIn && progressInClip < sub.timelineIn + sub.duration) {
-          this.renderClip(ctx, sub, assets, progressInClip, width, height, sub.timelineIn, useProxyMedia);
+          this.renderClip(ctx, sub, assets, progressInClip, width, height, sub.timelineIn, useProxyMedia, format, isPlaying, activeUrls);
         }
       }
     } else if (effectiveClip.type === 'generator') {
@@ -261,6 +290,7 @@ export class Compositor {
       MotionEngine.renderKineticTitle(ctx, effectiveClip, width, height, progressInClip);
     } else if (asset && asset.type === 'video') {
       const activeUrl = ProxyEngine.resolveAssetUrl(asset, useProxyMedia);
+      activeUrls?.add(activeUrl);
       const video = this.getVideoElement(activeUrl);
 
       // Compute Retiming (Variable Speed & Reverse Playback)
@@ -271,36 +301,102 @@ export class Compositor {
         effectiveClip.retiming
       );
 
-      // Instant Hardware Frame Cache check (0ms retrieval)
-      const cached = hardwareFrameCache.getCachedFrame(effectiveClip.assetId, targetSourceTime, 30);
-      if (cached) {
-        ctx.drawImage(cached, -width / 2, -height / 2, width, height);
-      } else {
-        if (Math.abs(video.currentTime - targetSourceTime) > 0.08) {
-          video.currentTime = targetSourceTime;
+      // Native hardware-accelerated playback synchronization
+      if (isPlaying) {
+        const desiredSpeed = effectiveClip.retiming?.speed || 1.0;
+        if (Math.abs(video.playbackRate - desiredSpeed) > 0.01) {
+          video.playbackRate = desiredSpeed;
         }
 
-        if (video.readyState >= 2) {
-          ctx.drawImage(video, -width / 2, -height / 2, width, height);
-          createImageBitmap(video).then((bitmap) => {
-            hardwareFrameCache.storeFrame(effectiveClip.assetId, targetSourceTime, bitmap, 30);
-          }).catch(() => {});
-        } else if (asset?.thumbnailUrl) {
-          const poster = this.getPosterImage(asset.thumbnailUrl);
-          if (poster.complete && poster.naturalWidth > 0) {
-            ctx.drawImage(poster, -width / 2, -height / 2, width, height);
-          } else {
-            ctx.fillStyle = '#141416';
-            ctx.fillRect(-width / 2, -height / 2, width, height);
-          }
+        if (effectiveClip.muted) {
+          video.muted = true;
         } else {
-          ctx.fillStyle = '#141416';
-          ctx.fillRect(-width / 2, -height / 2, width, height);
+          video.muted = false;
+          video.volume = Math.max(0, Math.min(1, effectiveClip.volume ?? 1.0));
+        }
+
+        if (video.paused) {
+          if (Math.abs(video.currentTime - targetSourceTime) > 0.12) {
+            video.currentTime = targetSourceTime;
+          }
+          video.play().catch(() => {});
+        } else {
+          // If video drifted by more than 0.25s, gently correct
+          if (Math.abs(video.currentTime - targetSourceTime) > 0.25) {
+            video.currentTime = targetSourceTime;
+          }
+        }
+      } else {
+        if (!video.paused) {
+          video.pause();
+          video.muted = true;
+        }
+        if (Math.abs(video.currentTime - targetSourceTime) > 0.04) {
+          video.currentTime = targetSourceTime;
         }
       }
 
-      // Pre-fetch surrounding frames for buttery scrubbing
-      hardwareFrameCache.prefetchWindow(video, effectiveClip.assetId, targetSourceTime, 30, 0.5);
+      // Spatial Conform calculation (Fit / Fill / None)
+      const sourceW = video.videoWidth || asset.width || width;
+      const sourceH = video.videoHeight || asset.height || height;
+      const srcAspect = (sourceW > 0 && sourceH > 0) ? sourceW / sourceH : width / height;
+      const canvasAspect = width / height;
+
+      let drawW = width;
+      let drawH = height;
+
+      const conformMode = effectiveClip.spatialConform || 'fit';
+
+      if (conformMode === 'none') {
+        drawW = sourceW;
+        drawH = sourceH;
+      } else if (conformMode === 'fill') {
+        if (srcAspect > canvasAspect) {
+          drawH = height;
+          drawW = height * srcAspect;
+        } else {
+          drawW = width;
+          drawH = width / srcAspect;
+        }
+      } else {
+        // 'fit' (default) - preserves original aspect ratio, letterbox / pillarbox
+        if (srcAspect > canvasAspect) {
+          drawW = width;
+          drawH = width / srcAspect;
+        } else {
+          drawH = height;
+          drawW = height * srcAspect;
+        }
+      }
+
+      // Apply Smart Conform AI auto-reframe if active
+      if (effectiveClip.smartConform?.enabled && format) {
+        const reframe = SmartConformEngine.calculateAutoReframe(
+          effectiveClip.smartConform,
+          sourceW,
+          sourceH,
+          format.aspectRatio
+        );
+        drawW *= reframe.autoScale;
+        drawH *= reframe.autoScale;
+        ctx.translate(reframe.autoPosX, 0);
+      }
+
+      // Draw active frame or poster
+      if (video.readyState >= 2) {
+        ctx.drawImage(video, -drawW / 2, -drawH / 2, drawW, drawH);
+      } else if (asset?.thumbnailUrl) {
+        const poster = this.getPosterImage(asset.thumbnailUrl);
+        if (poster.complete && poster.naturalWidth > 0) {
+          ctx.drawImage(poster, -drawW / 2, -drawH / 2, drawW, drawH);
+        } else {
+          ctx.fillStyle = '#141416';
+          ctx.fillRect(-drawW / 2, -drawH / 2, drawW, drawH);
+        }
+      } else {
+        ctx.fillStyle = '#141416';
+        ctx.fillRect(-drawW / 2, -drawH / 2, drawW, drawH);
+      }
     }
 
     // Effects

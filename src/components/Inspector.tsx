@@ -369,6 +369,23 @@ export const Inspector: React.FC<InspectorProps> = ({
                   className="w-full accent-[#0071e3] h-1 bg-[#38383a] rounded cursor-pointer"
                 />
               </div>
+
+              {/* Spatial Conform (Fit / Fill / None) */}
+              <div className="space-y-1 pt-1 border-t border-[#2c2c2e]">
+                <div className="flex justify-between text-[11px] text-[#8e8e93]">
+                  <span>Spatial Conform</span>
+                  <span className="font-mono text-[#d1d1d6] capitalize">{selectedClip.spatialConform || 'fit'}</span>
+                </div>
+                <select
+                  value={selectedClip.spatialConform || 'fit'}
+                  onChange={(e) => onUpdateClip({ ...selectedClip, spatialConform: e.target.value as 'fit' | 'fill' | 'none' })}
+                  className="w-full bg-[#121214] border border-[#2c2c2e] rounded px-2 py-1 text-[#d1d1d6] text-xs focus:outline-none focus:border-[#0071e3]"
+                >
+                  <option value="fit">Fit (Show Entire Video, Letterbox)</option>
+                  <option value="fill">Fill (Crop to Frame Canvas)</option>
+                  <option value="none">None (100% Original Pixels)</option>
+                </select>
+              </div>
             </div>
 
             {/* Collapsible Advanced Settings (Reframe, Retiming, Blend Modes) */}

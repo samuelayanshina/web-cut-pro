@@ -18,7 +18,9 @@ import {
   Radio,
   Layers,
   Bookmark,
-  Play
+  Play,
+  Trash,
+  X
 } from 'lucide-react';
 import { TimelineClip, ToolType, FCPProject, MediaAsset, AudioRole } from '../types/fcp';
 import { Timecode } from '../engine/Timecode';
@@ -45,6 +47,8 @@ interface TimelineProps {
   onToggleRoleMute: (role: AudioRole) => void;
   onToggleMarkerComplete: (markerId: string) => void;
   onLoadDemoProject?: () => void;
+  onDeleteClip?: (clipId: string) => void;
+  onClearTimeline?: () => void;
 }
 
 export const Timeline: React.FC<TimelineProps> = ({
@@ -67,6 +71,8 @@ export const Timeline: React.FC<TimelineProps> = ({
   onToggleRoleMute,
   onToggleMarkerComplete,
   onLoadDemoProject,
+  onDeleteClip,
+  onClearTimeline,
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const trackAreaRef = useRef<HTMLDivElement | null>(null);
@@ -279,6 +285,28 @@ export const Timeline: React.FC<TimelineProps> = ({
               <Plus size={13} className="text-[#8e8e93]" />
               <span className="hidden sm:inline">Gap</span>
             </button>
+
+            {selectedClipId && onDeleteClip && (
+              <button
+                onClick={() => onDeleteClip(selectedClipId)}
+                className="flex items-center gap-1.5 px-2.5 py-1 bg-red-950/70 hover:bg-red-900 border border-red-800 text-red-200 hover:text-white rounded-md transition-colors text-xs font-medium"
+                title="Delete Selected Clip (Backspace / ⌫)"
+              >
+                <Trash2 size={13} className="text-red-400" />
+                <span>Delete Clip</span>
+              </button>
+            )}
+
+            {spine.length > 0 && onClearTimeline && (
+              <button
+                onClick={onClearTimeline}
+                className="flex items-center gap-1.5 px-2 py-1 text-[#8e8e93] hover:text-red-400 hover:bg-[#242426] rounded-md transition-colors text-xs font-normal"
+                title="Clear All Clips from Timeline"
+              >
+                <Trash size={12} />
+                <span className="hidden md:inline">Clear All</span>
+              </button>
+            )}
           </div>
 
           {/* Center: Friendly 1-Line Coach Tip Pill */}
@@ -424,9 +452,23 @@ export const Timeline: React.FC<TimelineProps> = ({
                           {conn.type === 'title' ? <Type size={12} /> : <Film size={12} />}
                           <span className="truncate font-medium text-[11px]">{conn.name}</span>
                         </div>
-                        <span className="text-[9px] opacity-75 font-mono">
-                          {conn.duration.toFixed(1)}s
-                        </span>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <span className="text-[9px] opacity-75 font-mono">
+                            {conn.duration.toFixed(1)}s
+                          </span>
+                          {onDeleteClip && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDeleteClip(conn.id);
+                              }}
+                              className="p-0.5 rounded hover:bg-red-500/40 text-gray-400 hover:text-red-300 transition-colors"
+                              title="Delete Connected Clip (⌫)"
+                            >
+                              <X size={9} />
+                            </button>
+                          )}
+                        </div>
                         <div className="absolute -bottom-3 left-2 w-0.5 h-3 bg-yellow-400/80 pointer-events-none" />
                       </div>
                     );
@@ -521,11 +563,25 @@ export const Timeline: React.FC<TimelineProps> = ({
                           )}
                         </div>
 
-                        {!isGap && (
-                          <span className="text-[9px] font-mono opacity-80">
-                            {clip.duration.toFixed(1)}s
-                          </span>
-                        )}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {!isGap && (
+                            <span className="text-[9px] font-mono opacity-80">
+                              {clip.duration.toFixed(1)}s
+                            </span>
+                          )}
+                          {onDeleteClip && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDeleteClip(clip.id);
+                              }}
+                              className="p-1 rounded hover:bg-red-500/40 text-gray-400 hover:text-red-300 transition-colors"
+                              title="Delete Clip (⌫)"
+                            >
+                              <X size={10} />
+                            </button>
+                          )}
+                        </div>
                       </div>
 
                       {!isGap && (

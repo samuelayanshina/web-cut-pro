@@ -95,6 +95,26 @@ export const MenuBar: React.FC<MenuBarProps> = ({
           <span className="font-semibold text-white tracking-tight text-[13px] hidden sm:inline">
             Web Cut Pro
           </span>
+
+          {project.spine.length === 0 ? (
+            <button
+              onClick={onLoadDemoProject}
+              className="flex items-center gap-1.5 px-2 py-1 bg-[#242426] hover:bg-[#2c2c2e] border border-[#38383a] rounded-md text-[#d1d1d6] hover:text-white text-xs font-normal transition-colors ml-1"
+              title="Load Sample Demo Project"
+            >
+              <Play size={11} className="text-[#0a84ff] fill-[#0a84ff]" />
+              <span className="hidden xs:inline">Try Demo</span>
+            </button>
+          ) : (
+            <button
+              onClick={onNewBlankProject}
+              className="flex items-center gap-1 px-2 py-1 bg-[#242426] hover:bg-[#2c2c2e] border border-[#38383a] rounded-md text-[#d1d1d6] hover:text-white text-xs font-normal transition-colors ml-1"
+              title="Start a Clean Blank Project"
+            >
+              <Plus size={12} className="text-[#0a84ff]" />
+              <span>New Project</span>
+            </button>
+          )}
         </div>
 
         <div className="h-4 w-[1px] bg-[#2c2c2e] hidden md:block" />

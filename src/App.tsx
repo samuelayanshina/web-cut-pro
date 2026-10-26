@@ -498,19 +498,87 @@ export const App: React.FC = () => {
       }
     });
 
-    // Rehydrate custom assets from OPFS storage if session blob URLs expired
+    // Rehydrate and re-probe custom assets from OPFS / video elements
     assets.forEach(async (asset) => {
-      if (asset.opfsPath) {
-        try {
-          const file = await OPFSStorageEngine.getFile(asset.opfsPath);
-          if (file) {
-            const freshUrl = URL.createObjectURL(file);
-            setAssets((prev) =>
-              prev.map((a) => (a.id === asset.id ? { ...a, url: freshUrl } : a))
-            );
+      if (asset.id.startsWith('local-')) {
+        let mediaUrl = asset.url;
+        if (asset.opfsPath) {
+          try {
+            const file = await OPFSStorageEngine.getFile(asset.opfsPath);
+            if (file) {
+              mediaUrl = URL.createObjectURL(file);
+            }
+          } catch (e) {
+            console.warn('Could not rehydrate OPFS asset:', e);
           }
-        } catch (e) {
-          console.warn('Could not rehydrate OPFS asset:', e);
+        }
+
+        if (mediaUrl && asset.type === 'video') {
+          try {
+            const video = document.createElement('video');
+            video.preload = 'auto';
+            video.muted = true;
+            video.playsInline = true;
+            video.src = mediaUrl;
+
+            await new Promise<void>((resolve) => {
+              const cleanup = () => {
+                video.onloadedmetadata = null;
+                video.onseeked = null;
+                video.onerror = null;
+                resolve();
+              };
+
+              video.onloadedmetadata = () => {
+                const realDuration =
+                  video.duration && !isNaN(video.duration) && isFinite(video.duration)
+                    ? video.duration
+                    : asset.duration;
+                const realW = video.videoWidth || asset.width || 1920;
+                const realH = video.videoHeight || asset.height || 1080;
+
+                video.currentTime = Math.min(0.5, realDuration * 0.1);
+                video.onseeked = () => {
+                  let thumb = asset.thumbnailUrl;
+                  try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 160;
+                    canvas.height = Math.round(160 * (realH / realW));
+                    const ctx = canvas.getContext('2d');
+                    if (ctx) {
+                      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                      thumb = canvas.toDataURL('image/jpeg', 0.7);
+                    }
+                  } catch {}
+
+                  setAssets((prev) =>
+                    prev.map((a) =>
+                      a.id === asset.id
+                        ? {
+                            ...a,
+                            url: mediaUrl,
+                            duration: realDuration,
+                            width: realW,
+                            height: realH,
+                            thumbnailUrl: thumb,
+                          }
+                        : a
+                    )
+                  );
+                  cleanup();
+                };
+              };
+
+              video.onerror = cleanup;
+              setTimeout(cleanup, 4000);
+            });
+          } catch (e) {
+            console.warn('Could not re-probe video asset:', e);
+          }
+        } else if (mediaUrl) {
+          setAssets((prev) =>
+            prev.map((a) => (a.id === asset.id ? { ...a, url: mediaUrl } : a))
+          );
         }
       }
     });
@@ -800,7 +868,85 @@ export const App: React.FC = () => {
     setCurrentTime(0);
     setSelectedClipId(null);
     setIsPlaying(false);
+    compositor.pauseAll();
     analyticsEngine.track('IMPORT_MEDIA', 'User started a clean blank project');
+  };
+
+  const handleDeleteAsset = (assetId: string) => {
+    setAssets((prev) => prev.filter((a) => a.id !== assetId));
+    try {
+      const raw = localStorage.getItem(LOCAL_STORAGE_ASSETS_KEY);
+      if (raw) {
+        const custom = JSON.parse(raw);
+        if (Array.isArray(custom)) {
+          const updated = custom.filter((c: MediaAsset) => c.id !== assetId);
+          localStorage.setItem(LOCAL_STORAGE_ASSETS_KEY, JSON.stringify(updated));
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to delete asset from storage:', e);
+    }
+  };
+
+  const handleReplaceSpineWithAsset = (asset: MediaAsset) => {
+    pushUndoState(project);
+    const clipDuration = asset.duration || 5.0;
+    const newClip: TimelineClip = {
+      id: `clip-${asset.id}-${Date.now()}`,
+      name: asset.name.replace(/\.[^/.]+$/, ''),
+      assetId: asset.id,
+      type: asset.type,
+      role: asset.type === 'audio' ? 'music' : 'dialogue',
+      timelineIn: 0,
+      duration: clipDuration,
+      sourceIn: 0,
+      sourceOut: clipDuration,
+      retiming: initialRetiming,
+      kenBurns: initialKenBurns,
+      smartConform: initialSmartConform,
+      spatialConform: 'fit',
+      volume: 1.0,
+      pan: 0,
+      muted: false,
+      dsp: initialDsp,
+      opacity: 1.0,
+      blendMode: 'normal',
+      transform: { posX: 0, posY: 0, scale: 1.0, rotation: 0, anchorX: 0.5, anchorY: 0.5 },
+      colorGrading: { exposure: 0, contrast: 1, saturation: 1, temperature: 0, tint: 0, shadows: 0, midtones: 0, highlights: 0, wheels: initialWheels },
+      effects: [],
+      keyframes: {},
+      connectedClips: [],
+      generatorColor: asset.color,
+    };
+
+    let newFormat = project.format;
+    if (asset.width && asset.height) {
+      const ratio = Math.abs(asset.width / asset.height - 9 / 16) < 0.05
+        ? '9:16'
+        : Math.abs(asset.width / asset.height - 4 / 5) < 0.05
+        ? '4:5'
+        : Math.abs(asset.width / asset.height - 1.0) < 0.05
+        ? '1:1'
+        : '16:9';
+      newFormat = {
+        ...project.format,
+        width: asset.width,
+        height: asset.height,
+        aspectRatio: ratio,
+        name: `${ratio} ${ratio === '9:16' ? 'Vertical Short' : ratio === '16:9' ? 'Cinema' : 'Social'}`,
+      };
+    }
+
+    setProject((prev) => ({
+      ...prev,
+      format: newFormat,
+      spine: [newClip],
+    }));
+    setSelectedClipId(newClip.id);
+    setCurrentTime(0);
+    setIsPlaying(false);
+    compositor.pauseAll();
+    analyticsEngine.track('IMPORT_MEDIA', `Replaced timeline with asset ${asset.name}`);
   };
 
   const handleLoadSampleProject = () => {
@@ -1201,6 +1347,7 @@ export const App: React.FC = () => {
       let duration = 10.0;
       let width = 1920;
       let height = 1080;
+      let thumbnailUrl: string | undefined = undefined;
 
       if (isAudio) {
         try {
@@ -1228,13 +1375,14 @@ export const App: React.FC = () => {
       } else {
         try {
           const video = document.createElement('video');
-          video.preload = 'metadata';
+          video.preload = 'auto';
           video.muted = true;
           video.playsInline = true;
           video.src = blobUrl;
           await new Promise<void>((resolve) => {
             const cleanup = () => {
               video.onloadedmetadata = null;
+              video.onseeked = null;
               video.onerror = null;
               resolve();
             };
@@ -1244,10 +1392,26 @@ export const App: React.FC = () => {
               }
               if (video.videoWidth) width = video.videoWidth;
               if (video.videoHeight) height = video.videoHeight;
-              cleanup();
+
+              video.currentTime = Math.min(0.5, (duration || 1) * 0.1);
+              video.onseeked = () => {
+                try {
+                  const canvas = document.createElement('canvas');
+                  canvas.width = 160;
+                  canvas.height = Math.round(160 * (height / width));
+                  const ctx = canvas.getContext('2d');
+                  if (ctx) {
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    thumbnailUrl = canvas.toDataURL('image/jpeg', 0.7);
+                  }
+                } catch (e) {
+                  console.warn('Thumbnail generation failed:', e);
+                }
+                cleanup();
+              };
             };
             video.onerror = cleanup;
-            setTimeout(cleanup, 3500);
+            setTimeout(cleanup, 4000);
           });
         } catch (e) {
           console.warn('Could not read video metadata:', e);
@@ -1263,6 +1427,7 @@ export const App: React.FC = () => {
         duration,
         width,
         height,
+        thumbnailUrl,
         fps: 30,
       };
 
@@ -1314,6 +1479,8 @@ export const App: React.FC = () => {
       onConnectAsset={handleConnectAsset}
       onAddTitle={handleAddTitle}
       onImportCustomFiles={handleImportCustomFiles}
+      onDeleteAsset={handleDeleteAsset}
+      onReplaceSpineWithAsset={handleReplaceSpineWithAsset}
     />
   );
 
@@ -1390,6 +1557,8 @@ export const App: React.FC = () => {
       onToggleRoleMute={handleToggleRoleMute}
       onToggleMarkerComplete={handleToggleMarkerComplete}
       onLoadDemoProject={handleLoadSampleProject}
+      onDeleteClip={handleDeleteClip}
+      onClearTimeline={handleStartBlankProject}
     />
   );
 

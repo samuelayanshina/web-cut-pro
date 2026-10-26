@@ -10,7 +10,8 @@ import {
   Play, 
   PlusCircle, 
   Layers,
-  Palette
+  Palette,
+  Trash2
 } from 'lucide-react';
 import { MediaAsset, MediaType } from '../types/fcp';
 import { Timecode } from '../engine/Timecode';
@@ -24,6 +25,8 @@ interface MediaBrowserProps {
   onConnectAsset: (asset: MediaAsset) => void;
   onAddTitle: (titleText: string, type: 'lowerThird' | 'center') => void;
   onImportCustomFiles: (files: FileList) => void;
+  onDeleteAsset?: (assetId: string) => void;
+  onReplaceSpineWithAsset?: (asset: MediaAsset) => void;
 }
 
 export const MediaBrowser: React.FC<MediaBrowserProps> = ({
@@ -32,6 +35,8 @@ export const MediaBrowser: React.FC<MediaBrowserProps> = ({
   onConnectAsset,
   onAddTitle,
   onImportCustomFiles,
+  onDeleteAsset,
+  onReplaceSpineWithAsset,
 }) => {
   const [activeTab, setActiveTab] = useState<'media' | 'titles' | 'generators'>('media');
   const [selectedSmartFilter, setSelectedSmartFilter] = useState<FCPSmartCollection['filterType']>('all_video');
@@ -163,6 +168,7 @@ export const MediaBrowser: React.FC<MediaBrowserProps> = ({
             {filteredAssets.map((asset) => (
               <div
                 key={asset.id}
+                onClick={() => onAddAssetToSpine(asset)}
                 className="group relative bg-[#181818] border border-gray-800 hover:border-fcp-accent rounded-md overflow-hidden flex flex-col cursor-pointer transition-all shadow-sm"
               >
                 {/* Thumbnail / Filmstrip Preview */}
@@ -180,13 +186,29 @@ export const MediaBrowser: React.FC<MediaBrowserProps> = ({
                     </div>
                   ) : (
                     <div
-                      className="w-full h-full"
-                      style={{ backgroundColor: asset.color || '#3b82f6' }}
-                    />
+                      className="w-full h-full flex items-center justify-center text-gray-500 font-mono text-[10px]"
+                      style={{ backgroundColor: asset.color || '#1e293b' }}
+                    >
+                      <Film size={24} className="text-gray-400" />
+                    </div>
+                  )}
+
+                  {/* Delete custom asset button */}
+                  {asset.id.startsWith('local-') && onDeleteAsset && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteAsset(asset.id);
+                      }}
+                      className="absolute top-1 right-1 p-1 bg-black/75 hover:bg-red-600 text-gray-300 hover:text-white rounded transition-colors z-20 shadow-md"
+                      title="Delete this custom clip from Library"
+                    >
+                      <Trash2 size={11} />
+                    </button>
                   )}
 
                   {/* Duration Badge */}
-                  <span className="absolute bottom-1 right-1 bg-black/80 px-1 py-0.5 rounded text-[9px] font-mono text-gray-200">
+                  <span className="absolute bottom-1 right-1 bg-black/85 px-1 py-0.5 rounded text-[9px] font-mono text-gray-200 shadow">
                     {Timecode.formatDuration(asset.duration)}
                   </span>
                 </div>
@@ -199,15 +221,28 @@ export const MediaBrowser: React.FC<MediaBrowserProps> = ({
 
                   {/* Action Overlay Buttons */}
                   <div className="mt-1 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {onReplaceSpineWithAsset && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onReplaceSpineWithAsset(asset);
+                        }}
+                        className="flex-1 py-1 bg-[#0071e3] hover:bg-[#0077ed] text-white rounded text-[10px] font-medium text-center shadow-sm"
+                        title="Start fresh project with this video"
+                      >
+                        Use on Timeline
+                      </button>
+                    )}
+
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         onAddAssetToSpine(asset);
                       }}
-                      className="flex-1 py-0.5 bg-fcp-accent hover:bg-fcp-accentHover text-white rounded text-[10px] font-medium text-center"
+                      className="px-2 py-1 bg-[#2c2c2e] hover:bg-[#3a3a3c] text-white rounded text-[10px] font-medium text-center"
                       title="Append to Primary Storyline (E)"
                     >
-                      + Storyline
+                      + Add
                     </button>
 
                     <button
@@ -215,7 +250,7 @@ export const MediaBrowser: React.FC<MediaBrowserProps> = ({
                         e.stopPropagation();
                         onConnectAsset(asset);
                       }}
-                      className="px-1.5 py-0.5 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded text-[10px]"
+                      className="px-1.5 py-1 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded text-[10px]"
                       title="Connect Clip / B-Roll (Q)"
                     >
                       Connect
